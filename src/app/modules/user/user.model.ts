@@ -33,10 +33,10 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       default: 'https://i.ibb.co/z5YHLV9/profile.png',
     },
-    status: {
+    preferredLanguage: {
       type: String,
-      enum: ['active', 'delete'],
-      default: 'active',
+      default: 'English',
+      enum: ['English', 'Italian'],
     },
     verified: {
       type: Boolean,

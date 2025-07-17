@@ -7,9 +7,8 @@ export type IUser = {
   contact: string;
   email: string;
   password: string;
-  location: string;
+  preferredLanguage: string;
   image?: string;
-  status: 'active' | 'delete';
   verified: boolean;
   authentication?: {
     isResetPassword: boolean;

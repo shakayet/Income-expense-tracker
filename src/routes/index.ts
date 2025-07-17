@@ -12,6 +12,10 @@ const apiRoutes = [
     path: '/auth',
     route: AuthRoutes,
   },
+  {
+    path: '/expense',
+    router: 
+  }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
