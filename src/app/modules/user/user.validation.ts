@@ -6,7 +6,7 @@ const createUserZodSchema = z.object({
     contact: z.string({ required_error: 'Contact is required' }),
     email: z.string({ required_error: 'Email is required' }),
     password: z.string({ required_error: 'Password is required' }),
-    location: z.string({ required_error: 'Location is required' }),
+    preferredLanguage: z.string({ required_error: 'Location is required' }),
     profile: z.string().optional(),
   }),
 });
@@ -16,7 +16,7 @@ const updateUserZodSchema = z.object({
   contact: z.string().optional(),
   email: z.string().optional(),
   password: z.string().optional(),
-  location: z.string().optional(),
+  preferredLanguage: z.string().optional(),
   image: z.string().optional(),
 });
 
