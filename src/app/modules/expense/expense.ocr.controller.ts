@@ -1,36 +1,44 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
-import { extractDataFromImage } from './expense.ocr.service';
+import catchAsync from '../../../shared/catchAsync';
+import sendResponse from '../../../shared/sendResponse';
+import httpStatus from 'http-status';
+import { extractDataFromRawText } from './expense.ocr.service';
 import * as expenseService from './expense.service';
-import { Types } from 'mongoose';
 
-export const uploadReceipt = async (req: Request, res: Response) => {
-  try {
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
-    const file = files?.['image']?.[0];
-    if (!file) {
-      return res.status(400).json({ message: 'No image uploaded' });
+export const uploadTextAndExtractExpense = catchAsync(
+  async (req: Request, res: Response) => {
+    const { rawText } = req.body;
+
+    if (!rawText) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Raw text is required',
+      });
     }
 
-    const { amount, category } = await extractDataFromImage(file.path);
+    const { amount, category } = extractDataFromRawText(rawText);
 
     if (!amount || !category) {
-      return res.status(400).json({ message: 'Failed to extract data from image' });
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: 'Failed to extract amount or category from raw text',
+      });
     }
 
-    const userId = new Types.ObjectId(req.user.id);
-    const expense = await expenseService.createExpense(userId, {
+    const expensePayload = {
       amount,
       category,
-      note: 'Added via OCR'
+      note: 'Created from OCR text',
+    };
+
+    const userId = req.user?.id;
+    const result = await expenseService.createExpense(userId, expensePayload);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Expense created from raw OCR text',
+      data: result,
     });
-
-    // Optionally delete the image after processing
-    fs.unlinkSync(file.path);
-
-    res.status(201).json({ success: true, data: expense });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Something went wrong', error });
   }
-};
+);

@@ -5,6 +5,7 @@ import validateRequest from '../../middlewares/validateRequest';
 import { expenseCreateSchema, expenseUpdateSchema } from './expense.zod';
 import * as ocrController from './expense.ocr.controller';
 import fileUploadHandler from '../../middlewares/fileUploadHandler';
+import { uploadTextAndExtractExpense } from './expense.ocr.controller';
 
 const router = express.Router();
 
@@ -21,7 +22,6 @@ router.route('/:id')
   .put(validateRequest(expenseUpdateSchema), expenseController.updateExpense)
   .delete(expenseController.deleteExpense);
 
-router.route('/ocr-upload')
-  .post(fileUploadHandler(), ocrController.uploadReceipt);
+router.post('/ocr-raw', uploadTextAndExtractExpense);
 
 export const ExpenseRoutes = router;
