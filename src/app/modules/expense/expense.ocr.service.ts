@@ -1,5 +1,3 @@
-// utils/ocrParser.ts
-
 export const extractDataFromRawText = (
   rawText: string
 ): { amount?: number; category?: string } => {
