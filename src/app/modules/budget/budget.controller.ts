@@ -70,3 +70,27 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Failed to get budget details', error });
   }
 };
+
+export const updateBudget = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { month } = req.params;
+    const { amount } = req.body;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const budget = await Budget.findOneAndUpdate(
+      { userId, month },
+      { amount },
+      { new: true, upsert: false }
+    );
+
+    if (!budget) {
+      return res.status(404).json({ success: false, message: 'Budget not found for the given month' });
+    }
+
+    res.status(200).json({ success: true, data: budget });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update budget', error });
+  }
+};
