@@ -1,5 +1,9 @@
 import express from 'express';
-import { setOrUpdateBudget, getBudgetDetails, updateBudget } from './budget.controller';
+import {
+  setOrUpdateBudget,
+  getBudgetDetails,
+  updateBudget,
+} from './budget.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import { setBudgetZodSchema, updateBudgetZodSchema } from './budget.zod';
 import auth from '../../middlewares/auth';
@@ -9,10 +13,10 @@ const router = express.Router();
 
 router.use(auth(USER_ROLES.USER));
 
-router.route('/')
-  .post(validateRequest(setBudgetZodSchema), setOrUpdateBudget);
+router.route('/').post(validateRequest(setBudgetZodSchema), setOrUpdateBudget);
 
-router.route('/:month')
+router
+  .route('/:month')
   .get(getBudgetDetails)
   .patch(validateRequest(updateBudgetZodSchema), updateBudget);
 
