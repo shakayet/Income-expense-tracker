@@ -5,7 +5,7 @@ import Expense from '../expense/expense.model';
 
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { month, amount } = req.body;
@@ -27,7 +27,7 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
 
 export const getBudgetDetails = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const month = req.params.month;
@@ -58,10 +58,11 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       data: {
-        budgetAmount: budget.amount,
-        totalExpense,
-        remaining: remaining < 0 ? 0 : remaining,
+        budgetAmount: budget.amount.toFixed(2),
+        totalExpense: totalExpense.toFixed(2),
+        remaining: remaining < 0 ? 0 : remaining.toFixed(2),
         percentageLeft: percentageLeft < 0 ? 0 : +percentageLeft.toFixed(2),
+        percentageUsed: budget.amount > 0 ? (100 - percentageLeft).toFixed(2) : 0,
         month,
       },
     });
