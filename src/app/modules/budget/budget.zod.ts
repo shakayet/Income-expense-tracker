@@ -9,7 +9,6 @@ export const setBudgetZodSchema = z.object({
 
 export const updateBudgetZodSchema = z.object({
   body: z.object({
-    amount: z.number().positive(),
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Invalid month format (YYYY-MM)"),
+    amount: z.number().positive()
   }),
 });

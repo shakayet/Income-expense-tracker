@@ -14,6 +14,6 @@ router.route('/')
 
 router.route('/:month')
   .get(getBudgetDetails)
-  .put(validateRequest(updateBudgetZodSchema), updateBudget);
+  .patch(validateRequest(updateBudgetZodSchema), updateBudget);
 
 export const BudgetRoutes = router;

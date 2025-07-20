@@ -75,10 +75,9 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
       data: {
         budgetAmount: budget.amount.toFixed(2),
         totalExpense: totalExpense.toFixed(2),
-        remaining: remaining < 0 ? 0 : remaining.toFixed(2),
-        percentageLeft: percentageLeft < 0 ? 0 : +percentageLeft.toFixed(2),
-        percentageUsed:
-          budget.amount > 0 ? (100 - percentageLeft).toFixed(2) : 0,
+        remaining: remaining.toFixed(2),
+        percentageLeft: percentageLeft.toFixed(2),
+        percentageUsed:(100 - percentageLeft).toFixed(2),
         month,
       },
     });
@@ -91,7 +90,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
 
 export const updateBudget = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     const { month } = req.params;
     const { amount } = req.body;
 
@@ -104,12 +103,10 @@ export const updateBudget = async (req: Request, res: Response) => {
     );
 
     if (!budget) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: 'Budget not found for the given month',
-        });
+      return res.status(404).json({
+        success: false,
+        message: 'Budget not found for the given month',
+      });
     }
 
     res.status(200).json({ success: true, data: budget });
