@@ -6,9 +6,6 @@ import { Types } from 'mongoose';
 export const createExpense = async (req: Request, res: Response) => {
   const userId = new Types.ObjectId(req.user.id);
   const data = req.body;
-  // const validated = expenseCreateSchema.safeParse(req.body);
-
-  // if (!validated.success) return res.status(400).json(validated.error);
 
   const expense = await expenseService.createExpense(userId, data);
   res.json(expense);
