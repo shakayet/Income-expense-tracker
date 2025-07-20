@@ -1,5 +1,5 @@
 import express from 'express';
-import { setOrUpdateBudget, getBudgetDetails } from './budget.controller';
+import { setOrUpdateBudget, getBudgetDetails, updateBudget } from './budget.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import { setBudgetZodSchema } from './budget.zod';
 import auth from '../../middlewares/auth';
@@ -14,5 +14,6 @@ router.route('/')
 
 router.route('/:month')
   .get(getBudgetDetails);
+  .patch(validateRequest(updateBudgetZodSchema), updateBudget);
 
 export const BudgetRoutes = router;

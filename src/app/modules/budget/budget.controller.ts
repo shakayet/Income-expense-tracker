@@ -21,7 +21,9 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: budget });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to set budget', error });
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to set budget', error });
   }
 };
 
@@ -32,28 +34,41 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
 
     const month = req.params.month;
     if (!month.match(/^\d{4}-(0[1-9]|1[0-2])$/)) {
-      return res.status(400).json({ success: false, message: 'Invalid month format (YYYY-MM)' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid month format (YYYY-MM)' });
     }
 
     const budget = await Budget.findOne({ userId, month });
     if (!budget) {
-      return res.status(404).json({ success: false, message: 'Budget not set for this month' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Budget not set for this month' });
     }
 
     // Calculate total expenses for the month
     const expensesAgg = await Expense.aggregate([
-      { $match: { userId: new (require('mongoose').Types.ObjectId)(userId), createdAt: {
-          $gte: new Date(`${month}-01T00:00:00Z`),
-          $lt: new Date(new Date(`${month}-01T00:00:00Z`).setMonth(new Date(`${month}-01T00:00:00Z`).getMonth() + 1)),
-        }
-      }},
-      { $group: { _id: null, totalExpense: { $sum: '$amount' } } }
+      {
+        $match: {
+          userId: new (require('mongoose').Types.ObjectId)(userId),
+          createdAt: {
+            $gte: new Date(`${month}-01T00:00:00Z`),
+            $lt: new Date(
+              new Date(`${month}-01T00:00:00Z`).setMonth(
+                new Date(`${month}-01T00:00:00Z`).getMonth() + 1
+              )
+            ),
+          },
+        },
+      },
+      { $group: { _id: null, totalExpense: { $sum: '$amount' } } },
     ]);
 
     const totalExpense = expensesAgg.length ? expensesAgg[0].totalExpense : 0;
 
     const remaining = budget.amount - totalExpense;
-    const percentageLeft = budget.amount > 0 ? (remaining / budget.amount) * 100 : 0;
+    const percentageLeft =
+      budget.amount > 0 ? (remaining / budget.amount) * 100 : 0;
 
     res.status(200).json({
       success: true,
@@ -62,12 +77,15 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
         totalExpense: totalExpense.toFixed(2),
         remaining: remaining < 0 ? 0 : remaining.toFixed(2),
         percentageLeft: percentageLeft < 0 ? 0 : +percentageLeft.toFixed(2),
-        percentageUsed: budget.amount > 0 ? (100 - percentageLeft).toFixed(2) : 0,
+        percentageUsed:
+          budget.amount > 0 ? (100 - percentageLeft).toFixed(2) : 0,
         month,
       },
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to get budget details', error });
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to get budget details', error });
   }
 };
 
@@ -86,11 +104,18 @@ export const updateBudget = async (req: Request, res: Response) => {
     );
 
     if (!budget) {
-      return res.status(404).json({ success: false, message: 'Budget not found for the given month' });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: 'Budget not found for the given month',
+        });
     }
 
     res.status(200).json({ success: true, data: budget });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update budget', error });
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to update budget', error });
   }
 };
