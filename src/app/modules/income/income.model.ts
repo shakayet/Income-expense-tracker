@@ -9,7 +9,7 @@ const incomeSchema = new Schema<IIncome>({
   },
   source: {
     type: String,
-    enum: ['salary', 'business', 'gift', 'rent', 'others'],
+    enum: ['salary', 'business', 'gift', 'rent', 'freelancing', 'others'],
     required: true,
   },
   amount: {
