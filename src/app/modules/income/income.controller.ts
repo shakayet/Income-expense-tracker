@@ -4,7 +4,10 @@ import { Income } from './income.model';
 export const createIncome = async (req: Request, res: Response) => {
   try {
     const { source, amount } = req.body;
-    const userId = (req as any).user?.userId; // from decoded token
+    const userId = (req as any).user?.id; // from decoded token
+
+    console.log({userId, source, amount});
+
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 

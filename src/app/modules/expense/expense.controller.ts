@@ -1,15 +1,16 @@
 import { Request, Response } from 'express';
 import * as expenseService from './expense.service';
-import { expenseCreateSchema, expenseUpdateSchema } from './expense.zod';
+import {  expenseUpdateSchema } from './expense.zod';
 import { Types } from 'mongoose';
 
 export const createExpense = async (req: Request, res: Response) => {
   const userId = new Types.ObjectId(req.user.id);
-  const validated = expenseCreateSchema.safeParse(req.body);
+  const data = req.body;
+  // const validated = expenseCreateSchema.safeParse(req.body);
 
-  if (!validated.success) return res.status(400).json(validated.error);
+  // if (!validated.success) return res.status(400).json(validated.error);
 
-  const expense = await expenseService.createExpense(userId, validated.data);
+  const expense = await expenseService.createExpense(userId, data);
   res.json(expense);
 };
 

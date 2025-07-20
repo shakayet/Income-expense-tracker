@@ -2,7 +2,7 @@ import express from 'express';
 import * as expenseController from './expense.controller';
 import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
-import { expenseCreateSchema, expenseUpdateSchema } from './expense.zod';
+import { createExpenseZodSchema,  expenseUpdateSchema } from './expense.zod';
 import * as ocrController from './expense.ocr.controller';
 import fileUploadHandler from '../../middlewares/fileUploadHandler';
 import { uploadTextAndExtractExpense } from './expense.ocr.controller';
@@ -14,7 +14,7 @@ router.use(auth());
 
 
 router.route('/')
-  .post(validateRequest(expenseCreateSchema), expenseController.createExpense)
+  .post(validateRequest(createExpenseZodSchema), expenseController.createExpense)
   .get(expenseController.getExpenses);
 
 
