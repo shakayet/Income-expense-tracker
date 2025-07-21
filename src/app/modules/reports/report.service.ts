@@ -29,14 +29,14 @@ export const getMonthlyReport = async (userId: string, month: string) => {
   const incomeCategoryPercentage = Object.entries(incomeByCategory)
     .map(([category, amount]) => ({
       category,
-      percentage: (amount / totalIncome) * 100,
+      percentage: Number(((amount / totalIncome) * 100).toFixed(2)),
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
   const expenseCategoryPercentage = Object.entries(expenseByCategory)
     .map(([category, amount]) => ({
       category,
-      percentage: (amount / totalExpense) * 100,
+      percentage: Number(((amount / totalExpense) * 100).toFixed(2)),
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
@@ -47,13 +47,13 @@ export const getMonthlyReport = async (userId: string, month: string) => {
 
   return {
     month,
-    totalIncome,
     budget,
+    totalIncome,
+    totalExpense,
+    savings,
     budgetUsedPercentage,
     incomeCategoryPercentage,
-    totalExpense,
     expenseCategoryPercentage,
-    savings,
   };
 };
 
@@ -87,14 +87,14 @@ export const getYearlyReport = async (userId: string, year: string) => {
   const incomeCategoryPercentage = Object.entries(incomeByCategory)
     .map(([category, amount]) => ({
       category,
-      percentage: (amount / totalIncome) * 100,
+      percentage: Number(((amount / totalIncome) * 100).toFixed(2)),
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
   const expenseCategoryPercentage = Object.entries(expenseByCategory)
     .map(([category, amount]) => ({
       category,
-      percentage: (amount / totalExpense) * 100,
+      percentage: Number(((amount / totalExpense) * 100).toFixed(2)),
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
@@ -104,8 +104,8 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   return {
     year,
-    totalIncome,
     totalBudget,
+    totalIncome,
     totalExpense,
     savings,
     budgetUsedPercentage,
