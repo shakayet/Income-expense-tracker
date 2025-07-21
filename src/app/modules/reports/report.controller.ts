@@ -3,7 +3,7 @@ import { getMonthlyReport, getYearlyReport } from './report.service';
 
 export const monthlyReport = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     const { month } = req.query;
 
     if (!userId || !month)
@@ -22,7 +22,7 @@ export const monthlyReport = async (req: Request, res: Response) => {
 
 export const yearlyReport = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.userId;
+    const userId = (req as any).user?.id;
     const { year } = req.query;
 
     if (!userId || !year)
