@@ -1,40 +1,30 @@
 import { Request, Response } from 'express';
 import { getMonthlyReport, getYearlyReport } from './report.service';
 
-export const monthlyReport = async (req: Request, res: Response) => {
+export const monthlyReportController = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { month } = req.query;
-
-    if (!userId || !month)
-      return res
-        .status(400)
-        .json({ success: false, message: 'userId or month missing' });
-
-    const report = await getMonthlyReport(userId, month as string);
-    res.status(200).json({ success: true, data: report });
+    if (!month || typeof month !== 'string') {
+      return res.status(400).json({ success: false, message: 'Month is required in format YYYY-MM' });
+    }
+    const report = await getMonthlyReport(userId, month);
+    res.json({ success: true, data: report });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Monthly report failed', error });
+    res.status(500).json({ success: false, message: 'Failed to get monthly report', error });
   }
 };
 
-export const yearlyReport = async (req: Request, res: Response) => {
+export const yearlyReportController = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.id;
     const { year } = req.query;
-
-    if (!userId || !year)
-      return res
-        .status(400)
-        .json({ success: false, message: 'userId or year missing' });
-
-    const report = await getYearlyReport(userId, year as string);
-    res.status(200).json({ success: true, data: report });
+    if (!year || typeof year !== 'string') {
+      return res.status(400).json({ success: false, message: 'Year is required in format YYYY' });
+    }
+    const report = await getYearlyReport(userId, year);
+    res.json({ success: true, data: report });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Yearly report failed', error });
+    res.status(500).json({ success: false, message: 'Failed to get yearly report', error });
   }
 };
