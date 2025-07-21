@@ -3,7 +3,7 @@ import { Income } from './income.model';
 
 export const createIncome = async (req: Request, res: Response) => {
   try {
-    const { source, amount } = req.body;
+    const { source, amount, month } = req.body;
     const userId = (req as any).user?.id; // from decoded token
 
     console.log({userId, source, amount});
@@ -12,7 +12,7 @@ export const createIncome = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     const income = await Income.create({
       source,
