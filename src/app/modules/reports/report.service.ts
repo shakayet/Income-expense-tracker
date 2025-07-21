@@ -43,7 +43,7 @@ export const getMonthlyReport = async (userId: string, month: string) => {
       (expenseByCategory[exp.category] || 0) + exp.amount;
   }
 
-  const savings = totalIncome - totalExpense;
+  const savings = (totalIncome - totalExpense).toFixed(2);
 
   return {
     month,
@@ -83,7 +83,7 @@ export const getYearlyReport = async (userId: string, year: string) => {
       (expenseByCategory[exp.category] || 0) + exp.amount;
   }
 
-  const savings = totalIncome - totalExpense;
+  const savings = (totalIncome - totalExpense).toFixed(2);
 
   return {
     year,
