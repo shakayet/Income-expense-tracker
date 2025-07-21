@@ -43,13 +43,16 @@ export const getMonthlyReport = async (userId: string, month: string) => {
   const budget = budgetDoc?.amount || 0;
   const savings = (totalIncome - totalExpense).toFixed(2);
 
+  const budgetUsedPercentage = ((totalExpense / budget) * 100 ).toFixed(2);
+
   return {
     month,
     totalIncome,
+    budget,
+    budgetUsedPercentage,
     incomeCategoryPercentage,
     totalExpense,
     expenseCategoryPercentage,
-    budget,
     savings,
   };
 };
@@ -97,13 +100,16 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   const savings = (totalIncome - totalExpense).toFixed(2);
 
+  const budgetUsedPercentage = ((totalExpense / totalBudget) * 100 ).toFixed(2);
+
   return {
     year,
     totalIncome,
+    totalBudget,
+    budgetUsedPercentage,
     incomeCategoryPercentage,
     totalExpense,
     expenseCategoryPercentage,
-    totalBudget,
     savings,
   };
 };
