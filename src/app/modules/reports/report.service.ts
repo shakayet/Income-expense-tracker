@@ -1,5 +1,5 @@
 import { Income } from '../income/income.model';
-import { Expense } from '../expense/expense.model';
+import Expense from '../expense/expense.model';
 import { Types } from 'mongoose';
 
 const calculatePercentage = (data: Record<string, number>, total: number) => {
