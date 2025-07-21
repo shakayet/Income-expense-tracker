@@ -106,10 +106,10 @@ export const getYearlyReport = async (userId: string, year: string) => {
     year,
     totalIncome,
     totalBudget,
+    totalExpense,
+    savings,
     budgetUsedPercentage,
     incomeCategoryPercentage,
-    totalExpense,
     expenseCategoryPercentage,
-    savings,
   };
 };
