@@ -1,96 +1,109 @@
 import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
 import { Types } from 'mongoose';
-
-const calculatePercentage = (data: Record<string, number>, total: number) => {
-  return Object.entries(data)
-    .map(([key, value]) => ({
-      category: key,
-      percentage: +((value / total) * 100).toFixed(2),
-    }))
-    .sort((a, b) => b.percentage - a.percentage);
-};
+import { Budget } from '../budget/budget.model';
 
 export const getMonthlyReport = async (userId: string, month: string) => {
-  const incomeData = await Income.find({
-    userId: new Types.ObjectId(userId),
-    month,
+  const incomes = await Income.find({ userId, month });
+  const expenses = await Expense.find({
+    userId,
+    createdAt: {
+      $gte: new Date(`${month}-01`),
+      $lt: new Date(`${month}-31T23:59:59.999Z`),
+    },
   });
-  const expenseData = await Expense.find({
-    userId: new Types.ObjectId(userId),
-  });
+  const budgetDoc = await Budget.findOne({ userId, month });
 
-  const monthlyExpenses = expenseData.filter(item => {
-    const d = new Date(item.createdAt);
-    return (
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` ===
-      month
-    );
-  });
-
-  const totalIncome = incomeData.reduce((sum, i) => sum + i.amount, 0);
-  const totalExpense = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const totalIncome = incomes.reduce((acc, item) => acc + item.amount, 0);
+  const totalExpense = expenses.reduce((acc, item) => acc + item.amount, 0);
 
   const incomeByCategory: Record<string, number> = {};
-  for (const inc of incomeData) {
-    incomeByCategory[inc.source] =
-      (incomeByCategory[inc.source] || 0) + inc.amount;
-  }
-
   const expenseByCategory: Record<string, number> = {};
-  for (const exp of monthlyExpenses) {
-    expenseByCategory[exp.category] =
-      (expenseByCategory[exp.category] || 0) + exp.amount;
-  }
 
+  for (const i of incomes)
+    incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
+  for (const e of expenses)
+    expenseByCategory[e.category] =
+      (expenseByCategory[e.category] || 0) + e.amount;
+
+  const incomeCategoryPercentage = Object.entries(incomeByCategory)
+    .map(([category, amount]) => ({
+      category,
+      percentage: (amount / totalIncome) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
+
+  const expenseCategoryPercentage = Object.entries(expenseByCategory)
+    .map(([category, amount]) => ({
+      category,
+      percentage: (amount / totalExpense) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
+
+  const budget = budgetDoc?.amount || 0;
   const savings = (totalIncome - totalExpense).toFixed(2);
 
   return {
     month,
     totalIncome,
-    incomeBreakdown: calculatePercentage(incomeByCategory, totalIncome),
+    incomeCategoryPercentage,
     totalExpense,
-    expenseBreakdown: calculatePercentage(expenseByCategory, totalExpense),
+    expenseCategoryPercentage,
+    budget,
     savings,
   };
 };
 
 export const getYearlyReport = async (userId: string, year: string) => {
-  const incomeData = await Income.find({ userId: new Types.ObjectId(userId) });
-  const expenseData = await Expense.find({
-    userId: new Types.ObjectId(userId),
+  const incomeDocs = await Income.find({
+    userId,
+    month: { $regex: `^${year}-` },
   });
+  const expenseDocs = await Expense.find({
+    userId,
+    createdAt: {
+      $gte: new Date(`${year}-01-01`),
+      $lt: new Date(`${year}-12-31T23:59:59.999Z`),
+    },
+  });
+  const budgets = await Budget.find({ userId, month: { $regex: `^${year}-` } });
 
-  const yearlyIncome = incomeData.filter(
-    i => new Date(i.date).getFullYear().toString() === year
-  );
-  const yearlyExpense = expenseData.filter(
-    e => new Date(e.createdAt).getFullYear().toString() === year
-  );
-
-  const totalIncome = yearlyIncome.reduce((sum, i) => sum + i.amount, 0);
-  const totalExpense = yearlyExpense.reduce((sum, e) => sum + e.amount, 0);
+  const totalIncome = incomeDocs.reduce((acc, item) => acc + item.amount, 0);
+  const totalExpense = expenseDocs.reduce((acc, item) => acc + item.amount, 0);
+  const totalBudget = budgets.reduce((acc, b) => acc + b.amount, 0);
 
   const incomeByCategory: Record<string, number> = {};
-  for (const inc of yearlyIncome) {
-    incomeByCategory[inc.source] =
-      (incomeByCategory[inc.source] || 0) + inc.amount;
-  }
-
   const expenseByCategory: Record<string, number> = {};
-  for (const exp of yearlyExpense) {
-    expenseByCategory[exp.category] =
-      (expenseByCategory[exp.category] || 0) + exp.amount;
-  }
+
+  for (const i of incomeDocs)
+    incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
+  for (const e of expenseDocs)
+    expenseByCategory[e.category] =
+      (expenseByCategory[e.category] || 0) + e.amount;
+
+  const incomeCategoryPercentage = Object.entries(incomeByCategory)
+    .map(([category, amount]) => ({
+      category,
+      percentage: (amount / totalIncome) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
+
+  const expenseCategoryPercentage = Object.entries(expenseByCategory)
+    .map(([category, amount]) => ({
+      category,
+      percentage: (amount / totalExpense) * 100,
+    }))
+    .sort((a, b) => b.percentage - a.percentage);
 
   const savings = (totalIncome - totalExpense).toFixed(2);
 
   return {
     year,
     totalIncome,
-    incomeBreakdown: calculatePercentage(incomeByCategory, totalIncome),
+    incomeCategoryPercentage,
     totalExpense,
-    expenseBreakdown: calculatePercentage(expenseByCategory, totalExpense),
+    expenseCategoryPercentage,
+    totalBudget,
     savings,
   };
 };
