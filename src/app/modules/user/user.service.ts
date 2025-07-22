@@ -8,6 +8,7 @@ import unlinkFile from '../../../shared/unlinkFile';
 import generateOTP from '../../../util/generateOTP';
 import { IUser } from './user.interface';
 import { User } from './user.model';
+import { Document } from 'mongoose';
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   //set role
@@ -74,8 +75,13 @@ const updateProfileToDB = async (
   return updateDoc;
 };
 
+export const getAllUsersFromDB = async (): Promise<(IUser & Document)[]> => {
+  return User.find({}, '_id');
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
+  getAllUsersFromDB,
 };

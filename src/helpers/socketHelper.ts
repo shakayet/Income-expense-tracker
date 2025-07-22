@@ -2,7 +2,9 @@ import colors from 'colors';
 import { Server } from 'socket.io';
 import { logger } from '../shared/logger';
 
+let ioInstance: Server | null = null;
 const socket = (io: Server) => {
+  ioInstance = io;
   io.on('connection', socket => {
     logger.info(colors.blue('A user connected'));
 
@@ -13,4 +15,9 @@ const socket = (io: Server) => {
   });
 };
 
-export const socketHelper = { socket };
+export const socketHelper = {
+  socket,
+  get io() {
+    return ioInstance;
+  }
+};

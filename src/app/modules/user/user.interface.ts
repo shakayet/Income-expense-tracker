@@ -1,7 +1,8 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { USER_ROLES } from '../../../enums/user';
 
 export type IUser = {
+  _id?: Types.ObjectId;
   name: string;
   role: USER_ROLES;
   contact: string;
