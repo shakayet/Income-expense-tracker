@@ -5,6 +5,8 @@ import { ExpenseRoutes } from '../app/modules/expense/expense.route';
 import { IncomeRoutes } from '../app/modules/income/income.route';
 import { BudgetRoutes } from '../app/modules/budget/budget.route';
 import { ReportRoutes } from '../app/modules/reports/report.route';
+import path from 'path';
+import { NotificationRoutes } from '../app/modules/notification/notification.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -31,6 +33,10 @@ const apiRoutes = [
   {
     path: '/reports',
     route: ReportRoutes,
+  },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
   }
 ];
 
