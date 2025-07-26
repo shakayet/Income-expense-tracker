@@ -2,7 +2,7 @@ import { Schema, model } from 'mongoose';
 import { INotification } from './notification.interface';
 
 const NotificationSchema = new Schema<INotification>({
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: Schema.Types.ObjectId, ref: 'User' },
   type: {
     type: String,
     enum: ['monthly-report', 'yearly-report', 'budget-warning'],

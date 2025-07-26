@@ -3,7 +3,7 @@ import {
   getMonthlyReport,
   getYearlyReport,
 } from '../app/modules/reports/report.service';
-import { getAllUsersFromDB }  from '../app/modules/user/user.service';
+import { getAllUsersFromDB } from '../app/modules/user/user.service';
 import { getBudgetDetails } from '../app/modules/budget/budget.controller';
 
 export const sendMonthlyAndYearlyNotifications = async () => {
@@ -22,29 +22,39 @@ export const sendMonthlyAndYearlyNotifications = async () => {
 
     // Monthly report
     const monthlyReport = await getMonthlyReport(user.id, selectDate);
-    if (monthlyReport.totalIncome > 0 || monthlyReport.totalExpense > 0) {
-      await createNotification({
-        userId: user.id,
-        type: 'monthly-report',
-        title: 'Your Monthly Report is Ready',
-        message: `Tap to see your report for ${prevMonth}/${currentYear}`,
-        reportMonth: prevMonth,
-        reportYear: currentYear,
-      });
+
+    const monthlyData = {
+      type: 'monthly-report',
+      title: 'Your Monthly Report is Ready',
+      message: `Tap to see your report for ${prevMonth}/${currentYear}`,
+      reportMonth: prevMonth,
+      reportYear: currentYear,
+    };
+
+    console.log('Monthly Report:', monthlyReport);
+
+    if (monthlyReport.totalIncome >= 0 || monthlyReport.totalExpense >= 0) {
+      const monthlyNotification = await createNotification(
+        monthlyData,
+        user.id
+      );
+
+      console.log('Monthly Notification:', monthlyNotification);
     }
 
     // Yearly report
-    if (date.getMonth() === 0) {
-      const yearlyReport = await getYearlyReport(user.id, prevYear);
-      if (yearlyReport.totalIncome > 0 || yearlyReport.totalExpense > 0) {
-        await createNotification({
-          userId: user.id,
-          type: 'yearly-report',
-          title: 'Your Yearly Report is Ready',
-          message: `Tap to see your report for ${prevYear}`,
-          reportYear: prevYear,
-        });
-      }
+    const yearlyReport = await getYearlyReport(user.id, prevYear);
+    console.log('Yearly Report:', yearlyReport);
+
+    const yarlyData = {
+      type: 'yearly-report',
+      title: 'Your Yearly Report is Ready',
+      message: `Tap to see your report for ${prevYear}`,
+      reportYear: prevYear,
+    };
+
+    if (yearlyReport.totalIncome >= 0 || yearlyReport.totalExpense >= 0) {
+      await createNotification(yarlyData, user.id);
     }
   }
 };

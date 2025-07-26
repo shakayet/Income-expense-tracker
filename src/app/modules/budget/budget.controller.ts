@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
-import { Budget } from './budget.model';
+// ...existing code...
 import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
+import { createNotification } from '../notification/notification.service';
+import { hasReachedThreshold } from '../../../util/notificationThresholdTracker';
+import { getMonthlyReport } from '../reports/report.service';
 
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
@@ -77,7 +80,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
         totalExpense: totalExpense.toFixed(2),
         remaining: remaining.toFixed(2),
         percentageLeft: percentageLeft.toFixed(2),
-        percentageUsed:(100 - percentageLeft).toFixed(2),
+        percentageUsed: (100 - percentageLeft).toFixed(2),
         month,
       },
     });
@@ -114,5 +117,62 @@ export const updateBudget = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ success: false, message: 'Failed to update budget', error });
+  }
+};
+
+import { Budget } from './budget.model';
+
+export const getBudgetByUserAndMonth = async (
+  userId: string,
+  month: string
+) => {
+  return Budget.findOne({ userId, month });
+};
+
+export const checkAndNotifyBudgetUsage = async (
+  userId: string,
+  monthKey: string
+) => {
+  const budget = await getBudgetByUserAndMonth(userId, monthKey);
+  if (!budget) return;
+
+  const report = await getMonthlyReport(userId, monthKey);
+  const expense = report.totalExpense ?? 0;
+  const budgetAmount = budget.amount;
+  const usedPercent = (expense / budgetAmount) * 100;
+
+  const thresholds = [50, 75, 90, 100];
+
+  console.log("dslfksdf")
+
+  for (const threshold of thresholds) {
+    if (
+      usedPercent >= threshold &&
+      hasReachedThreshold(userId, monthKey, threshold)
+    ) {
+      await createNotification(
+        {
+          type: 'budget-alert',
+          title: `You've used ${threshold}% of your budget!`,
+          message: `You’ve spent ${threshold}% of your monthly budget for ${monthKey}`,
+          reportMonth: monthKey.split('-')[1],
+          reportYear: monthKey.split('-')[0],
+        },
+        userId
+      );
+    }
+  }
+
+  if (usedPercent > 100 && hasReachedThreshold(userId, monthKey, 101)) {
+    await createNotification(
+      {
+        type: 'budget-alert',
+        title: `Budget Exceeded!`,
+        message: `You’ve exceeded your monthly budget for ${monthKey}`,
+        reportMonth: monthKey.split('-')[1],
+        reportYear: monthKey.split('-')[0],
+      },
+      userId
+    );
   }
 };
