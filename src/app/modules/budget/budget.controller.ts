@@ -133,7 +133,10 @@ export const checkAndNotifyBudgetUsage = async (
   userId: string,
   monthKey: string
 ) => {
+
   const budget = await getBudgetByUserAndMonth(userId, monthKey);
+  // console.log("Checking budget usage for user:", budget);
+    // console.log("it's working: ",budget);
   if (!budget) return;
 
   const report = await getMonthlyReport(userId, monthKey);
@@ -142,17 +145,20 @@ export const checkAndNotifyBudgetUsage = async (
   const usedPercent = (expense / budgetAmount) * 100;
 
   const thresholds = [50, 75, 90, 100];
+  console.log("it's working: ");
 
-  console.log("dslfksdf")
 
   for (const threshold of thresholds) {
+
+    // console.log(hasReachedThreshold(userId, monthKey, threshold))
+
     if (
       usedPercent >= threshold &&
       hasReachedThreshold(userId, monthKey, threshold)
     ) {
       await createNotification(
         {
-          type: 'budget-alert',
+          type: 'budget-warning',
           title: `You've used ${threshold}% of your budget!`,
           message: `You’ve spent ${threshold}% of your monthly budget for ${monthKey}`,
           reportMonth: monthKey.split('-')[1],
@@ -166,7 +172,7 @@ export const checkAndNotifyBudgetUsage = async (
   if (usedPercent > 100 && hasReachedThreshold(userId, monthKey, 101)) {
     await createNotification(
       {
-        type: 'budget-alert',
+        type: 'budget-warning',
         title: `Budget Exceeded!`,
         message: `You’ve exceeded your monthly budget for ${monthKey}`,
         reportMonth: monthKey.split('-')[1],

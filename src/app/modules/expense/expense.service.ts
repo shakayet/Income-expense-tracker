@@ -14,9 +14,9 @@ export const createExpense = async (
     : new Date();
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-  console.log("hittttttttt")
-  // await checkAndNotifyBudgetUsage(userId.toString(), `${year}-${month}`);
-  createNotification(data, userId);
+
+
+  await checkAndNotifyBudgetUsage(userId.toString(), `${year}-${month}`);
   return Expense.create({ ...data, userId });
 };
 

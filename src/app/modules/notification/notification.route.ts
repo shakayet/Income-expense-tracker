@@ -12,5 +12,7 @@ router.get('/', getNotifications);
 router.patch('/:id/read', markAsRead);
 router.post('/', postNotifications);
 router.post('/test-monthly-yearly', sendMonthlyAndYearlyNotifications);
+router.get('/:id', NotificationController.getSingleNotification);
+
 
 export const NotificationRoutes = router;
