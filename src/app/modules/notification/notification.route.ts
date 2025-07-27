@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   getNotifications,
+  getSingleNotification,
   markAsRead,
   postNotifications,
 } from './notification.controller';
@@ -16,6 +17,6 @@ router.get('/', getNotifications);
 router.patch('/:id/read', markAsRead);
 router.post('/', postNotifications);
 router.post('/test-monthly-yearly', sendMonthlyAndYearlyNotifications);
-router.get('/:id', NotificationController.getSingleNotification);
+router.get('/:id', getSingleNotification);
 
 export const NotificationRoutes = router;
