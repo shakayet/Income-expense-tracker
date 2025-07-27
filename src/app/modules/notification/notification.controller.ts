@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 import * as NotificationService from './notification.service';
+import { Notification } from './notification.model';
+import AppError from '../../../errors/ApiError';
+import httpStatus from 'http-status';
+import sendResponse from '../../../shared/sendResponse';
 
 export const getNotifications = async (req: Request, res: Response) => {
   const userId = req.user.id;
@@ -25,4 +29,16 @@ export const postNotifications = async (req: Request, res: Response) => {
   res.json({ success: true, data: notifications });
 };
 
-// ...existing code...
+export const getSingleNotification = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const notification = await Notification.findById(id);
+  if (!notification) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
+  }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Notification fetched successfully',
+    data: notification,
+  });
+};
