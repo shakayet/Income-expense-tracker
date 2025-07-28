@@ -12,6 +12,8 @@ const NotificationSchema = new Schema<INotification>({
   message: { type: String, required: true },
   reportMonth: { type: String },
   reportYear: { type: String },
+  budgetAmount: { type: Number},
+  usedAmount: { type: Number},
   isRead: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
