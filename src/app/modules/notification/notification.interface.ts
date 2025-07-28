@@ -7,6 +7,8 @@ export interface INotification {
   message: string;
   reportMonth?: string;
   reportYear?: string;
+  budgetAmount: number;
+  usedAmount: number;
   isRead?: boolean;
   createdAt?: Date;
 }
