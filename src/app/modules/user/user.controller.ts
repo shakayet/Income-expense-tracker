@@ -4,6 +4,7 @@ import catchAsync from '../../../shared/catchAsync';
 import { getSingleFilePath } from '../../../shared/getFilePath';
 import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
+import { User } from './user.model';
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -63,9 +64,32 @@ const updateProfile = catchAsync(
   }
 );
 
+const updateFcmToken = async (req: Request, res: Response) => {
+  const userId = req.user.id; // extracted from JWT middleware
+  const { fcmToken } = req.body;
+
+  if (!fcmToken) {
+    return res.status(400).json({ message: 'FCM token required' });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'FCM token updated successfully' });
+  } catch (error) {
+    console.error('Error updating FCM token:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
   getAllUsers,
+  updateFcmToken,
 };

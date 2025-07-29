@@ -4,6 +4,8 @@ import { socketHelper } from '../../../helpers/socketHelper'; // socket instance
 import { JwtPayload } from 'jsonwebtoken';
 import { sendMonthlyAndYearlyNotifications } from '../../../util/notificationTrigger';
 import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
+// import { sendPushNotification } from '../helpers/push';
+import { sendPushNotification } from '../../../helpers/push';
 
 // GET ALL NOTIFICATIONS FOR USER
 export const getUserNotifications = async (userId: string) => {
@@ -12,13 +14,23 @@ export const getUserNotifications = async (userId: string) => {
 
 // CREATE NOTIFICATION
 export const createNotification = async (data: any, userId: string) => {
-  
   const userIdString = userId.toString();
-  const created = await Notification.create({ ...data, userId: userId.toString() });
+  const created = await Notification.create({ ...data, userId: userIdString });
   console.log('notification created:', created);
 
-  if (socketHelper.io && userId) {
+  if (socketHelper.io && userIdString) {
     socketHelper.io.emit(`notification::${userIdString}`, created);
+  }
+
+  // Fetch user to get fcmToken
+  const { User } = require('../user/user.model');
+  const user = await User.findById(userIdString);
+  if (user && user.fcmToken) {
+    await sendPushNotification({
+      token: user.fcmToken,
+      title: created.title,
+      body: created.message,
+    });
   }
   return created;
 };

@@ -43,6 +43,9 @@ const userSchema = new Schema<IUser, UserModal>(
       default: 'English',
       enum: ['English', 'Italian'],
     },
+    fcmToken: { 
+      type: String
+    },
     verified: {
       type: Boolean,
       default: false,

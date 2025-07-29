@@ -26,4 +26,8 @@ router
 router
   .route('/').post(validateRequest(UserValidation.createUserZodSchema),UserController.createUser);
 
+router
+  .route('/fcm-token')
+  .patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN), UserController.updateFcmToken);
+
 export const UserRoutes = router;
