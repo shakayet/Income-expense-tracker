@@ -11,6 +11,7 @@ export type IUser = {
   preferredLanguage: string;
   image?: string;
   verified: boolean;
+  fcmToken: { type: String } | null;
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;

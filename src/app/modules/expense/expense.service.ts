@@ -17,6 +17,7 @@ export const createExpense = async (
 
 
   await checkAndNotifyBudgetUsage(userId.toString(), `${year}-${month}`);
+  console.log(Expense);
   return Expense.create({ ...data, userId });
 };
 
