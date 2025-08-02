@@ -9,6 +9,7 @@ import path from 'path';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { PlanRoutes } from '../app/modules/plan/plan.routes';
 import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
+import { CategoryRoutes } from '../app/modules/category/category.route';
 const router = express.Router();
 
 const apiRoutes = [
@@ -40,8 +41,16 @@ const apiRoutes = [
     path: '/notifications',
     route: NotificationRoutes,
   },
-  { path: '/plan', route: PlanRoutes },
-  { path: '/subscription', route: SubscriptionRoutes },
+  { path: '/plan', 
+    route: PlanRoutes, 
+  },
+  { path: '/subscription', 
+    route: SubscriptionRoutes,
+  },
+  {
+    path: '/category',
+    route: CategoryRoutes,
+  }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
