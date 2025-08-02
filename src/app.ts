@@ -35,7 +35,7 @@ app.use(express.static('uploads'));
 //router
 app.use('/api/v1', router);
 
-// TODO 
+// TODO
 app.post('/create-checkout-session', async (req: Request, res: Response) => {
   const { id } = req.body;
 
@@ -47,7 +47,7 @@ app.post('/create-checkout-session', async (req: Request, res: Response) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: id, // this should be the Stripe Price ID, not your plan id
+          price: id, // this should be the Stripe Price ID, not the plan id
           quantity: 1,
         },
       ],
@@ -61,7 +61,6 @@ app.post('/create-checkout-session', async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Something went wrong', error });
   }
 });
-
 
 //live response
 app.get('/', (req: Request, res: Response) => {
