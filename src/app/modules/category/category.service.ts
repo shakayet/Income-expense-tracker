@@ -24,5 +24,5 @@ export const CategoryService = {
   updateCategory,
   deleteCategory,
   getUserCategories,
-  createCategory,
+  createCategory
 };
