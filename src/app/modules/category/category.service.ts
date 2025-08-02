@@ -32,7 +32,7 @@ export const createCategory = async (payload: ICategory, userId: string) => {
 const getAllCategories = async (userId: string) => {
   const categories = await Category.find({
     $or: [
-      { userId: null }, // Default categories
+      //   { userId: null }, // Default categories
       { userId: userId }, // Custom categories created by this user
     ],
   });
