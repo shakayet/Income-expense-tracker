@@ -3,6 +3,7 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import httpStatus from 'http-status';
 import * as categoryService from './category.service';
+import { CategoryService } from './category.service';
 
 export const createCategory = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
