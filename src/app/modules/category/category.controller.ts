@@ -27,3 +27,27 @@ export const getCategories = catchAsync(async (req: Request, res: Response) => {
     data: categories,
   });
 });
+
+export const updateCategory = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+  const updated = await CategoryService.updateCategory(id, req.body);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Category updated successfully',
+    data: updated,
+  });
+});
+
+export const deleteCategory = catchAsync(async (req: Request, res: Response) => {
+  const id = req.params.id;
+  const deleted = await CategoryService.deleteCategory(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Category deleted successfully',
+    data: deleted,
+  });
+});
