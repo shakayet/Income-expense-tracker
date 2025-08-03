@@ -24,10 +24,33 @@ router
   );
 
 router
-  .route('/').post(validateRequest(UserValidation.createUserZodSchema),UserController.createUser);
+  .route('/')
+  .post(
+    validateRequest(UserValidation.createUserZodSchema),
+    UserController.createUser
+  );
 
 router
   .route('/fcm-token')
-  .patch(auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN), UserController.updateFcmToken);
+  .patch(
+    auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
+    UserController.updateFcmToken
+  );
+
+router.patch(
+  '/set-pin',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
+  UserController.setPin
+);
+router.patch(
+  '/update-pin',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
+  UserController.updatePin
+);
+router.post(
+  '/verify-pin',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
+  UserController.verifyPin
+);
 
 export const UserRoutes = router;

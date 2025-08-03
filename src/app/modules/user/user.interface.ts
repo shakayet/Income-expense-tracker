@@ -10,6 +10,7 @@ export type IUser = {
   password: string;
   preferredLanguage: string;
   image?: string;
+  pin?: string;
   verified: boolean;
   fcmToken?: { type: String } | null;
   authentication?: {

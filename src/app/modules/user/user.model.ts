@@ -46,6 +46,10 @@ const userSchema = new Schema<IUser, UserModal>(
     fcmToken: { 
       type: String
     },
+    pin: {
+      type: String,
+      select: false, // Exclude pin from queries by default
+    },
     verified: {
       type: Boolean,
       default: false,

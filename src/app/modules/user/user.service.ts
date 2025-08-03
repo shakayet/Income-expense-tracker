@@ -9,6 +9,7 @@ import generateOTP from '../../../util/generateOTP';
 import { IUser } from './user.interface';
 import { User } from './user.model';
 import { Document } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   //set role
@@ -79,9 +80,47 @@ export const getAllUsersFromDB = async (): Promise<(IUser & Document)[]> => {
   return User.find({}, '_id');
 };
 
+const setPin = async (userId: string, pin: string) => {
+  const user = await User.findById(userId).select('+pin');
+  if (!user) throw new ApiError(400, 'User not found');
+
+  if (user.pin) {
+    throw new ApiError(400, 'PIN already set. Use updatePin to change it.');
+  }
+
+  const hashedPin = await bcrypt.hash(pin, 10);
+  user.pin = hashedPin;
+  await user.save();
+  return { message: 'PIN set successfully' };
+};
+
+const updatePin = async (userId: string, oldPin: string, newPin: string) => {
+  const user = await User.findById(userId).select('+pin');
+  if (!user || !user.pin) throw new ApiError(400, 'PIN not set yet');
+
+  const isMatch = await bcrypt.compare(oldPin, user.pin);
+  if (!isMatch) throw new ApiError(400, 'Incorrect current PIN');
+
+  const hashedNewPin = await bcrypt.hash(newPin, 10);
+  user.pin = hashedNewPin;
+  await user.save();
+  return { message: 'PIN updated successfully' };
+};
+
+const verifyPin = async (userId: string, inputPin: string) => {
+  const user = await User.findById(userId).select('+pin');
+  if (!user || !user.pin) throw new ApiError(400, 'PIN not set yet');
+
+  const isMatch = await bcrypt.compare(inputPin, user.pin);
+  return { isValid: isMatch };
+};
+
 export const UserService = {
   createUserToDB,
   getUserProfileFromDB,
   updateProfileToDB,
   getAllUsersFromDB,
+  setPin,
+  updatePin,
+  verifyPin,
 };

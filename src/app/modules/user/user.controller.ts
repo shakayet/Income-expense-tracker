@@ -86,10 +86,65 @@ const updateFcmToken = async (req: Request, res: Response) => {
   }
 };
 
+const setPin = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { pin } = req.body;
+
+  if (!pin || pin.length !== 4) {
+    return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
+  }
+
+  const result = await UserService.setPin(userId, pin);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+  });
+});
+
+const updatePin = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { oldPin, newPin } = req.body;
+
+  if (!oldPin || !newPin || newPin.length !== 4) {
+    return res.status(400).json({ message: 'Invalid PIN format' });
+  }
+
+  const result = await UserService.updatePin(userId, oldPin, newPin);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+  });
+});
+
+const verifyPin = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const { pin } = req.body;
+
+  if (!pin || pin.length !== 4) {
+    return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
+  }
+
+  const result = await UserService.verifyPin(userId, pin);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.isValid ? 'PIN verified successfully' : 'Invalid PIN',
+    data: { isValid: result.isValid },
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
   updateProfile,
   getAllUsers,
   updateFcmToken,
+  setPin,
+  updatePin,
+  verifyPin,
 };
