@@ -90,8 +90,15 @@ const setPin = async (userId: string, pin: string) => {
 
   const hashedPin = await bcrypt.hash(pin, 10);
   user.pin = hashedPin;
-  await user.save();
-  return { message: 'PIN set successfully' };
+
+  const result = await User.findByIdAndUpdate(
+    userId,
+    { pin: hashedPin },
+    { new: true }
+  );
+
+  // await user.save();
+  return result;
 };
 
 const updatePin = async (userId: string, oldPin: string, newPin: string) => {
@@ -103,7 +110,12 @@ const updatePin = async (userId: string, oldPin: string, newPin: string) => {
 
   const hashedNewPin = await bcrypt.hash(newPin, 10);
   user.pin = hashedNewPin;
-  await user.save();
+  // await user.save();
+  const result = await User.findByIdAndUpdate(
+    userId,
+    { pin: hashedNewPin },
+    { new: true }
+  );
   return { message: 'PIN updated successfully' };
 };
 

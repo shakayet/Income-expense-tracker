@@ -22,6 +22,7 @@ const createUser = catchAsync(
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
+  console.log(user);
   const result = await UserService.getUserProfileFromDB(user);
 
   sendResponse(res, {
@@ -73,7 +74,11 @@ const updateFcmToken = async (req: Request, res: Response) => {
   }
 
   try {
-    const user = await User.findByIdAndUpdate(userId, { fcmToken }, { new: true });
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { fcmToken },
+      { new: true }
+    );
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -89,6 +94,7 @@ const updateFcmToken = async (req: Request, res: Response) => {
 const setPin = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const { pin } = req.body;
+  console.log('pin ->', pin);
 
   if (!pin || pin.length !== 4) {
     return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
@@ -99,7 +105,8 @@ const setPin = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
-    message: result.message,
+    message: '',
+    data: result,
   });
 });
 
