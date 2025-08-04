@@ -22,7 +22,6 @@ const createUser = catchAsync(
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
-  console.log(user);
   const result = await UserService.getUserProfileFromDB(user);
 
   sendResponse(res, {
@@ -94,7 +93,6 @@ const updateFcmToken = async (req: Request, res: Response) => {
 const setPin = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const { pin } = req.body;
-  console.log('pin ->', pin);
 
   if (!pin || pin.length !== 4) {
     return res.status(400).json({ message: 'PIN must be exactly 4 digits' });
