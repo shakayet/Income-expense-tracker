@@ -1,104 +1,47 @@
 import { launchBrowser } from '../puppeteerHelper';
+import { PriceResult } from '../compare.service';
 
-export const scrapeAliExpress = async (query: string, maxPrice: number) => {
+export const scrapeAliExpress = async (
+  query: string,
+  maxPrice: number
+): Promise<PriceResult[] | null> => {
   const browser = await launchBrowser();
   const page = await browser.newPage();
 
   try {
-    // Configure page to prevent detection
     await page.setUserAgent(
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     );
-    await page.setViewport({ width: 1366, height: 768 });
 
-    // Build search URL
-    const searchURL = `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(
-      query
-    )}`;
+    const searchURL = `https://www.aliexpress.com/wholesale?SearchText=${encodeURIComponent(query)}`;
+    await page.goto(searchURL, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-    // Navigate with comprehensive wait conditions
-    await page.goto(searchURL, {
-      waitUntil: 'networkidle2',
-      timeout: 60000,
+    await page.waitForSelector('.manhattan--container--1lP57Ag', { timeout: 40000 });
+
+    const results: PriceResult[] = await page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('.manhattan--container--1lP57Ag'));
+      return items.map((item) => {
+        const priceText = item.querySelector('.manhattan--price-sale--1CCSZfK')?.textContent;
+        const link = item.querySelector('a')?.getAttribute('href');
+
+        const price = priceText
+          ? parseFloat(priceText.replace(/[^\d.]/g, ''))
+          : null;
+
+        if (!price || !link) return null;
+
+        return {
+          price,
+          link: link.startsWith('http') ? link : 'https:' + link,
+          source: 'AliExpress',
+        };
+      }).filter(Boolean) as PriceResult[];
     });
 
-    // Wait for either search results or no-results message
-    await Promise.race([
-      page.waitForSelector('.search-card-item', { timeout: 10000 }),
-      page.waitForSelector('.no-result', { timeout: 10000 }),
-    ]);
-
-    // Check for no results
-    const noResults = await page.$('.no-result');
-    if (noResults) {
-      // No results found
-      return null;
-    }
-
-    // Extract product data
-    const results: Array<{ price: number; link: string } | null> =
-      await page.evaluate(() => {
-        const items = Array.from(
-          document.querySelectorAll('.search-card-item')
-        );
-        return items.map(item => {
-          try {
-            // Modern price selector
-            const priceEl =
-              item.querySelector('.snow-price_SnowPrice__mainM__jlh6el') ||
-              item.querySelector('.multi--price-sale--U-S0jtj') ||
-              item.querySelector('.search-price');
-
-            // Product link selector
-            const linkEl = item.querySelector(
-              '.search-card-item'
-            ) as HTMLAnchorElement;
-
-            if (!priceEl || !linkEl) return null;
-
-            // Handle price ranges (e.g., "US $1.99 - $2.99")
-            let priceText = priceEl.textContent?.trim() || '';
-            priceText = priceText.split('-')[0].trim();
-
-            // Extract numeric price
-            const price = parseFloat(priceText.replace(/[^\d.]/g, ''));
-
-            // Handle relative URLs
-            const href = linkEl.href || '';
-            const link = href.startsWith('//') ? `https:${href}` : href;
-
-            return { price, link };
-          } catch {
-            return null;
-          }
-        });
-      });
-
-    // Filter out nulls and by max price
-    const filtered: Array<{ price: number; link: string }> = results.filter(
-      (r): r is { price: number; link: string } =>
-        r !== null && typeof r.price === 'number' && r.price <= maxPrice
-    );
-    if (filtered.length === 0) {
-      // No items under maxPrice found
-      return null;
-    }
-
-    // Find cheapest option
-    const cheapest = filtered.reduce((prev, current) => {
-      if (!prev) return current;
-      if (!current) return prev;
-      return prev.price < current.price ? prev : current;
-    }, filtered[0]);
-
-    if (!cheapest) return null;
-    return {
-      source: 'AliExpress',
-      price: cheapest.price,
-      link: cheapest.link,
-    };
-  } catch (error) {
-    // Optionally log error using a logger here
+    const filtered = results.filter((r) => r.price <= maxPrice);
+    return filtered.length > 0 ? filtered : null;
+  } catch (err) {
+    console.error('AliExpress scraper error:', err);
     return null;
   } finally {
     await browser.close();

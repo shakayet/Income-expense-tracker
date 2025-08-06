@@ -1,8 +1,7 @@
 import express from 'express';
 import { comparePriceController } from './compare.controller';
 
-const router = express.Router();
+const comparePriceRoutes = express.Router();
+comparePriceRoutes.route('/').post(comparePriceController);
 
-router.route('/').post(comparePriceController);
-
-export default router;
+export default comparePriceRoutes;

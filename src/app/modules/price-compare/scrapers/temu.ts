@@ -1,52 +1,39 @@
 import { launchBrowser } from '../puppeteerHelper';
+import { PriceResult } from '../compare.service';
 
-export const scrapeTemu = async (query: string, maxPrice: number) => {
+export const scrapeTemu = async (query: string, maxPrice: number): Promise<PriceResult[] | null> => {
   const browser = await launchBrowser();
   const page = await browser.newPage();
 
-  await page.goto(
-    `https://www.temu.com/search_result.html?search_key=${encodeURIComponent(
-      query
-    )}`,
-    {
-      waitUntil: 'domcontentloaded',
-    }
-  );
-
-  await page.waitForSelector('.product-card');
-
-  const results = await page.evaluate(() => {
-    const items = Array.from(document.querySelectorAll('.product-card'));
-    return items.map(item => {
-      const priceText = item.querySelector('.product-price span')?.textContent;
-      const link = item.querySelector('a')?.getAttribute('href');
-      const price = priceText
-        ? parseFloat(priceText.replace(/[^\d.]/g, ''))
-        : null;
-      return price && link
-        ? {
-            price,
-            link: link.startsWith('http')
-              ? link
-              : 'https://www.temu.com' + link,
-          }
-        : null;
+  try {
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
+    await page.goto(`https://www.temu.com/search_result.html?search_key=${encodeURIComponent(query)}`, {
+      waitUntil: 'networkidle2',
+      timeout: 60000
     });
-  });
 
-  await browser.close();
+    await page.waitForSelector('.product-card, [data-test="product-card"], .JExcCA', { timeout: 40000 });
 
-  const filtered: Array<{ price: number; link: string }> = results.filter(
-    (r): r is { price: number; link: string } =>
-      r !== null && typeof r.price === 'number' && r.price <= maxPrice
-  );
-  if (filtered.length === 0) return null;
+    const results = await page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('.product-card, [data-test="product-card"], .JExcCA'));
+      return items.map(item => {
+        const priceText = item.querySelector('.product-price, ._2v0H9')?.textContent;
+        const link = item.querySelector('a')?.href;
+        const price = priceText ? parseFloat(priceText.replace(/[^\d.]/g, '')) : null;
+        return price && link ? { price, link, source: 'Temu' } : null;
+      }).filter(Boolean);
+    });
 
-  const cheapest = filtered.reduce((prev, current) => {
-    if (!prev) return current;
-    if (!current) return prev;
-    return prev.price < current.price ? prev : current;
-  }, filtered[0]);
-  if (!cheapest) return null;
-  return { source: 'Temu', ...cheapest };
+    const filtered = results.filter((r: any) => r.price <= maxPrice).map((r: any) => ({
+      ...r,
+      price: parseFloat(r.price.toFixed(2))
+    }));
+
+    return filtered.length ? filtered.slice(0, 3) : null;
+  } catch (error) {
+    console.error('Temu scraper error:', error);
+    return null;
+  } finally {
+    await browser.close();
+  }
 };
