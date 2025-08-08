@@ -1,41 +1,61 @@
-import { launchBrowser } from '../puppeteerHelper';
-import { PriceResult } from '../compare.service';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+import { Product } from '../types';
 
-export const scrapeAmazon = async (query: string, maxPrice: number): Promise<PriceResult[] | null> => {
-  const browser = await launchBrowser();
-  const page = await browser.newPage();
+const ZENROWS_API_KEY = '3d62e10536d5a0e4c3d84b9491dabc74e728c993';
+
+export const scrapeAmazon = async (
+  productName: string,
+  maxPrice: number
+): Promise<Product[]> => {
+  const searchUrl = `https://www.amazon.it/s?k=${encodeURIComponent(productName)}&s=price-asc-rank`;
 
   try {
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
-    await page.setJavaScriptEnabled(true);
-
-    await page.goto(`https://www.amazon.it/s?k=${encodeURIComponent(query)}`, {
-      waitUntil: 'networkidle2',
-      timeout: 60000,
+    const { data } = await axios.get('https://api.zenrows.com/v1/', {
+      params: {
+        url: searchUrl,
+        apikey: ZENROWS_API_KEY,
+        premium_proxy: true,
+        js_render: true,
+        // Added parameters to ensure proper rendering
+        wait: 2000,
+        wait_for: 'div.s-result-item'
+      }
     });
 
-    const results = await page.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('[data-asin][data-component-type="s-search-result"]'));
-      return items.map(item => {
-        const priceWhole = item.querySelector('.a-price .a-price-whole')?.textContent?.replace(/[^\d]/g, '');
-        const priceFraction = item.querySelector('.a-price .a-price-fraction')?.textContent?.replace(/[^\d]/g, '');
-        const link = item.querySelector('h2 a')?.getAttribute('href');
+    const $ = cheerio.load(data);
+    const results: Product[] = [];
 
-        const price = priceWhole && priceFraction ? parseFloat(`${priceWhole}.${priceFraction}`) : null;
-        return price && link ? { price, link: 'https://www.amazon.it' + link, source: 'Amazon' } : null;
-      }).filter(Boolean);
+    $('div.s-result-item').each((_, el) => {
+      const title = $(el).find('h2 span').text().trim();
+      
+      // Extract price components
+      const priceWhole = $(el).find('.a-price-whole').first().text().replace(/[^\d]/g, '');
+      const priceFraction = $(el).find('.a-price-fraction').first().text().replace(/[^\d]/g, '');
+      const price = parseFloat(`${priceWhole}.${priceFraction}`);
+      
+      // FIXED LINK EXTRACTION:
+      // 1. Get the anchor element more reliably
+      const linkElement = $(el).find('a.a-link-normal.s-no-outline');
+      // 2. Fallback to alternative selector if needed
+      const href = linkElement.attr('href') || $(el).find('h2 a').attr('href');
+      // 3. Construct full URL only if href exists
+      const link = href ? `https://www.amazon.it${href}` : null;
+
+      // Only add product if all required fields are valid
+      if (title && link && !isNaN(price) && price <= maxPrice) {
+        results.push({ 
+          title, 
+          price: +price.toFixed(2), 
+          link, 
+          source: 'Amazon' 
+        });
+      }
     });
 
-    const filtered = results.filter((r: any) => r.price <= maxPrice).map((r: any) => ({
-      ...r,
-      price: parseFloat(r.price.toFixed(2))
-    }));
-
-    return filtered.length ? filtered.slice(0, 3) : null;
+    return results.slice(0, 3);
   } catch (error) {
-    console.error('Amazon scraper error:', error);
-    return null;
-  } finally {
-    await browser.close();
+    console.error('❌ Amazon ZenRows error:', error.message);
+    return [];
   }
 };
