@@ -5,6 +5,11 @@ import { scrapeEbay } from './scrapers/ebay';
 import { scrapeSubito } from './scrapers/subito';
 import { scrapeAlibaba } from './scrapers/alibaba';
 import { scrapeZalando } from './scrapers/zalando';
+import { scrapeEtsy } from './scrapers/zalando';
+import { scrapeUnieuro } from './scrapers/unieuro';
+import { scrapeDecathlon } from './scrapers/decathlon';
+import {scrapeLeroyMerlin } from './scrapers/leroyMerlin';
+import { scrapeMediaWorld } from './scrapers/mediaWorld';
 
 type PriceResult = {
   price: number;
@@ -57,7 +62,12 @@ export const comparePrices = async (
     // { name: 'Temu', fn: () => scrapeTemu(product, maxPrice) },
     // { name: 'Subito', fn: () => scrapeSubito(product, maxPrice) },
     // { name: 'Alibaba', fn: () => scrapeAlibaba(product, maxPrice) },
-    { name: 'Zalando', fn: () => scrapeZalando(product, maxPrice) },
+    // { name: 'Zalando', fn: () => scrapeZalando(product, maxPrice) },
+    // { name: 'Etsy', fn: () => scrapeEtsy(product, maxPrice) },
+    // { name: 'Unieuro', fn: () => scrapeUnieuro(product, maxPrice) },
+    // { name: 'Decathlon', fn: () => scrapeDecathlon(product, maxPrice) },
+    // { name: 'LeroyMerlin', fn: () => scrapeLeroyMerlin(product, maxPrice) },
+    // { name: 'MediaWorld', fn: () => scrapeMediaWorld(product, maxPrice) },
   ];
 
   console.log(`Starting price comparison for: ${product} (max €${maxPrice})`);

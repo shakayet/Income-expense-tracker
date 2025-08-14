@@ -953,6 +953,13 @@
   dependencies:
     "@types/ms" "*"
 
+"@types/dotenv@^6.1.1":
+  version "6.1.1"
+  resolved "https://registry.npmjs.org/@types/dotenv/-/dotenv-6.1.1.tgz"
+  integrity sha512-ftQl3DtBvqHl9L16tpqqzA4YzCSXZfi7g8cQceTz5rOlYtk/IZbFjAv3mLOQlNIgOaylCQWQoBdDQHPgEBJPHg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/express-serve-static-core@^4.17.33":
   version "4.19.6"
   resolved "https://registry.npmjs.org/@types/express-serve-static-core/-/express-serve-static-core-4.19.6.tgz"
@@ -1306,6 +1313,14 @@ await-to-js@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/await-to-js/-/await-to-js-3.0.0.tgz"
   integrity sha512-zJAaP9zxTcvTHRlejau3ZOY4V7SRpiByf3/dxx2uyKxxor19tpmpV2QRsTKikckwhaPmr2dVpxxMr7jOCYVp5g==
+
+axios-proxy-fix@^0.16.3:
+  version "0.16.3"
+  resolved "https://registry.npmjs.org/axios-proxy-fix/-/axios-proxy-fix-0.16.3.tgz"
+  integrity sha512-dLRTjqYW7A9kuqh3aiFjvQrBSQipVwsHFV401MdQb2JhQS9rAobAMhME2GxZXNXDblWRGCVfW/LdoHUXrPFBRg==
+  dependencies:
+    follow-redirects "^1.2.3"
+    is-buffer "^1.1.5"
 
 axios@^1.11.0:
   version "1.11.0"
@@ -1819,12 +1834,7 @@ destroy@1.2.0:
   resolved "https://registry.npmjs.org/destroy/-/destroy-1.2.0.tgz"
   integrity sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==
 
-devtools-protocol@*, devtools-protocol@0.0.1464554:
-  version "0.0.1464554"
-  resolved "https://registry.npmjs.org/devtools-protocol/-/devtools-protocol-0.0.1464554.tgz"
-  integrity sha512-CAoP3lYfwAGQTaAXYvA6JZR0fjGUb7qec1qf4mToyoH2TZgUFeIqYcjh6f9jNuhHfuZiEdH+PONHYrLhRQX6aw==
-
-devtools-protocol@0.0.1475386:
+devtools-protocol@*, devtools-protocol@0.0.1475386:
   version "0.0.1475386"
   resolved "https://registry.npmjs.org/devtools-protocol/-/devtools-protocol-0.0.1475386.tgz"
   integrity sha512-RQ809ykTfJ+dgj9bftdeL2vRVxASAuGU+I9LEx9Ij5TXU5HrgAQVmzi72VA+mkzscE12uzlRv5/tWWv9R9J1SA==
@@ -2370,7 +2380,7 @@ fn.name@1.x.x:
   resolved "https://registry.npmjs.org/fn.name/-/fn.name-1.1.0.tgz"
   integrity sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw==
 
-follow-redirects@^1.15.6:
+follow-redirects@^1.15.6, follow-redirects@^1.2.3:
   version "1.15.9"
   resolved "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.9.tgz"
   integrity sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==
@@ -2536,6 +2546,11 @@ globby@^11.1.0:
     ignore "^5.2.0"
     merge2 "^1.4.1"
     slash "^3.0.0"
+
+google-search-results-nodejs@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmjs.org/google-search-results-nodejs/-/google-search-results-nodejs-2.1.0.tgz"
+  integrity sha512-7jEAoAV/Ful7Q2BxrYrkOst14aqwUvkEUwlRBrYATUylpp/bf3uE9lDgyk9brqbDt61hA2xkAm2sog9orHImVw==
 
 gopd@^1.2.0:
   version "1.2.0"
@@ -3540,6 +3555,13 @@ pixelmatch@^5.3.0:
   dependencies:
     pngjs "^6.0.0"
 
+playwright-extra@*, playwright-extra@^4.3.6:
+  version "4.3.6"
+  resolved "https://registry.npmjs.org/playwright-extra/-/playwright-extra-4.3.6.tgz"
+  integrity sha512-q2rVtcE8V8K3vPVF1zny4pvwZveHLH8KBuVU2MoE3Jw4OKVoBWsHI9CH9zPydovHHOCDxjGN2Vg+2m644q3ijA==
+  dependencies:
+    debug "^4.3.4"
+
 pngjs@^6.0.0:
   version "6.0.0"
   resolved "https://registry.npmjs.org/pngjs/-/pngjs-6.0.0.tgz"
@@ -3623,7 +3645,7 @@ punycode@^2.1.0, punycode@^2.3.1:
   resolved "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz"
   integrity sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==
 
-puppeteer-core@*, puppeteer-core@^24.16.0:
+puppeteer-core@*, puppeteer-core@^24.16.0, puppeteer-core@24.16.0:
   version "24.16.0"
   resolved "https://registry.npmjs.org/puppeteer-core/-/puppeteer-core-24.16.0.tgz"
   integrity sha512-tZ0tJiOYaDGTRzzr2giDpf8O/55JsoqkrafS1Xu4H6S8oP4eeL6RbZzY9OzjShSf5EQvx/zAc55QKpDqzXos/Q==
@@ -3632,18 +3654,6 @@ puppeteer-core@*, puppeteer-core@^24.16.0:
     chromium-bidi "7.2.0"
     debug "^4.4.1"
     devtools-protocol "0.0.1475386"
-    typed-query-selector "^2.12.0"
-    ws "^8.18.3"
-
-puppeteer-core@24.15.0:
-  version "24.15.0"
-  resolved "https://registry.npmjs.org/puppeteer-core/-/puppeteer-core-24.15.0.tgz"
-  integrity sha512-2iy0iBeWbNyhgiCGd/wvGrDSo73emNFjSxYOcyAqYiagkYt5q4cPfVXaVDKBsukgc2fIIfLAalBZlaxldxdDYg==
-  dependencies:
-    "@puppeteer/browsers" "2.10.6"
-    chromium-bidi "7.2.0"
-    debug "^4.4.1"
-    devtools-protocol "0.0.1464554"
     typed-query-selector "^2.12.0"
     ws "^8.18.3"
 
@@ -3694,16 +3704,16 @@ puppeteer-extra@*, puppeteer-extra@^3.3.6:
     debug "^4.1.1"
     deepmerge "^4.2.2"
 
-puppeteer@*, puppeteer@^24.15.0:
-  version "24.15.0"
-  resolved "https://registry.npmjs.org/puppeteer/-/puppeteer-24.15.0.tgz"
-  integrity sha512-HPSOTw+DFsU/5s2TUUWEum9WjFbyjmvFDuGHtj2X4YUz2AzOzvKMkT3+A3FR+E+ZefiX/h3kyLyXzWJWx/eMLQ==
+puppeteer@*, puppeteer@^24.16.0:
+  version "24.16.0"
+  resolved "https://registry.npmjs.org/puppeteer/-/puppeteer-24.16.0.tgz"
+  integrity sha512-5qxFGOpdAzYexoPwKPEF4L/IYKYOFE1MxWsqcp7K33HySM8N8S/yZwSQCaV0rzmJsTLX5LxU4zt65+ceNiVDgQ==
   dependencies:
     "@puppeteer/browsers" "2.10.6"
     chromium-bidi "7.2.0"
     cosmiconfig "^9.0.0"
-    devtools-protocol "0.0.1464554"
-    puppeteer-core "24.15.0"
+    devtools-protocol "0.0.1475386"
+    puppeteer-core "24.16.0"
     typed-query-selector "^2.12.0"
 
 qs@^6.11.0, qs@6.13.0:
@@ -3865,6 +3875,11 @@ send@0.19.0:
     on-finished "2.4.1"
     range-parser "~1.2.1"
     statuses "2.0.1"
+
+serpapi@^2.2.1:
+  version "2.2.1"
+  resolved "https://registry.npmjs.org/serpapi/-/serpapi-2.2.1.tgz"
+  integrity sha512-1HXXaIwDmYueFPauAggIkzozMi5P/a4/yRUxB8Z1kad0VQE/7ohf9a6xRQ99aXR252itDChfmJUfBdCA4phCYA==
 
 serve-static@1.16.2:
   version "1.16.2"

@@ -1,3 +1,5 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import colors from 'colors';
 import mongoose from 'mongoose';
 import { Server } from 'socket.io';
