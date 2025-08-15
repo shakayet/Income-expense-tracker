@@ -9,7 +9,7 @@ if (!API_KEY) {
   throw new Error('SERPAPI_KEY is not defined in environment variables');
 }
 
-export interface ScrapedItem {
+export type ScrapedItem = {
   source: string;
   title: string;
   price: number | null;
@@ -22,8 +22,6 @@ export async function scrapeSiteFromSerpApi(
   site: string
 ): Promise<ScrapedItem[]> {
   try {
-    console.log(`[Scraper] Starting ${site} search for: "${query}"`);
-
     const params = {
       engine: 'google_shopping',
       q: query,
@@ -37,18 +35,6 @@ export async function scrapeSiteFromSerpApi(
     };
 
     const json = await getJson(params);
-
-    if (!json.shopping_results) {
-      console.warn(
-        `[Scraper] No shopping results for ${site} in query: ${query}`
-      );
-      return [];
-    }
-
-    console.log(
-      '[Scraper] Raw items:',
-      JSON.stringify(json.shopping_results, null, 2)
-    );
 
     return json.shopping_results.map((item: any) => {
       let link = item.link || item.url;
@@ -80,7 +66,7 @@ export async function scrapeSiteFromSerpApi(
       };
     });
   } catch (error) {
-    console.error(`[Scraper] ${site} critical error:`, error);
+    // console.error(`[Scraper] ${site} critical error:`, error);
     return [];
   }
 }
