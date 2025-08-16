@@ -11,7 +11,7 @@ import { scrapeDecathlon } from './scrapers/decathlon';
 import {scrapeLeroyMerlin } from './scrapers/leroyMerlin';
 import { scrapeMediaWorld } from './scrapers/mediaWorld';
 
-type PriceResult = {
+export type PriceResult = {
   price: number;
   link: string;
   source: string;
@@ -58,7 +58,7 @@ export const comparePrices = async (
   const scrapers = [
     // { name: 'Amazon', fn: () => scrapeAmazon(product, maxPrice) },
     // { name: 'AliExpress', fn: () => scrapeAliExpress(product, maxPrice) },
-    // { name: 'eBay', fn: () => scrapeEbay(product, maxPrice) },
+    { name: 'eBay', fn: () => scrapeEbay(product, maxPrice) },
     // { name: 'Temu', fn: () => scrapeTemu(product, maxPrice) },
     // { name: 'Subito', fn: () => scrapeSubito(product, maxPrice) },
     // { name: 'Alibaba', fn: () => scrapeAlibaba(product, maxPrice) },

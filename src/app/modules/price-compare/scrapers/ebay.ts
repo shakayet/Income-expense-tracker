@@ -4,8 +4,8 @@ import { PriceResult } from '../compare.service';
 export const scrapeEbay = async (
   query: string,
   maxPrice: number
-): Promise<PriceResult[] | null> => {
-  let browser;
+): Promise<PriceResult[]> => {
+  let browser: import('puppeteer').Browser | undefined;
   try {
     browser = await launchBrowser();
     const page = await browser.newPage();
@@ -16,34 +16,39 @@ export const scrapeEbay = async (
     );
     await page.setViewport({ width: 1280, height: 800 });
     await page.setExtraHTTPHeaders({
-      'accept-language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7'
+      'accept-language': 'it-IT,it;q=0.9,en-US;q=0.8,en;q=0.7',
     });
 
     // Navigate with optimized parameters
     await page.goto(
-      `https://www.ebay.it/sch/i.html?_nkw=${encodeURIComponent(query)}&_ipg=120`,
+      `https://www.ebay.it/sch/i.html?_nkw=${encodeURIComponent(
+        query
+      )}&_ipg=120`,
       {
         waitUntil: 'networkidle2',
-        timeout: 60000
+        timeout: 60000,
       }
     );
 
     // Wait for core content
     await page.waitForSelector('.s-item', { timeout: 45000 });
 
-    const results = await page.evaluate((maxPrice) => {
+    const results: PriceResult[] = await page.evaluate((maxPrice: number) => {
       return Array.from(document.querySelectorAll('.s-item'))
         .slice(1) // Skip first item (usually header)
         .map(item => {
           try {
             const priceEl = item.querySelector('.s-item__price');
             const linkEl = item.querySelector('.s-item__link');
-            
-            if (!priceEl?.textContent || !linkEl?.href) return null;
+            const titleEl = item.querySelector('.s-item__title');
+
+            const href = linkEl?.getAttribute('href');
+            const title = titleEl?.textContent?.trim() || '';
+            if (!priceEl?.textContent || !href || !title) return null;
 
             // Extract and clean price
             let priceText = priceEl.textContent.trim();
-            
+
             // Handle price ranges
             if (priceText.includes(' a ') || priceText.includes(' to ')) {
               priceText = priceText.split(/ a | to /i)[0].trim();
@@ -52,31 +57,34 @@ export const scrapeEbay = async (
             // Normalize currency format
             const cleanPrice = priceText
               .replace(/[^\d,.]/g, '') // Remove non-numeric chars
-              .replace(/\./g, '')       // Remove thousands separators
-              .replace(/,/g, '.');       // Convert decimal commas to dots
+              .replace(/\./g, '') // Remove thousands separators
+              .replace(/,/g, '.'); // Convert decimal commas to dots
 
             const price = parseFloat(cleanPrice);
             if (isNaN(price)) return null;
-            
+
             // Filter within evaluation to reduce memory
             if (price > maxPrice) return null;
 
             return {
               price,
-              link: linkEl.href,
-              source: 'eBay'
+              link: href,
+              source: 'eBay',
+              title,
             };
           } catch (e) {
             return null;
           }
         })
-        .filter(Boolean);
+        .filter(
+          (item): item is { price: number; link: string; source: string; title: string } =>
+            Boolean(item)
+        );
     }, maxPrice);
 
-    return results.length > 0 ? results : null;
-  } catch (error) {
-    console.error('eBay scraper error:', error);
-    return null;
+    return results;
+  } catch {
+    return [];
   } finally {
     if (browser) await browser.close();
   }
