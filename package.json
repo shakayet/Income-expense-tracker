@@ -48,7 +48,7 @@
     "https-proxy-agent": "^7.0.6",
     "jimp": "^1.6.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.4",
+    "mongoose": "^8.17.1",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "nodemailer": "^6.9.14",
