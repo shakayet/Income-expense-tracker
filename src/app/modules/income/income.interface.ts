@@ -1,6 +1,6 @@
-import { Schema, Types, model } from 'mongoose';
+import { Types } from 'mongoose';
 
-export interface IIncome {
+export type IIncome = {
   userId: Types.ObjectId;
   source: 'salary' | 'business' | 'gift' | 'rent' | 'freelancing' | 'others';
   amount: number;
