@@ -32,7 +32,6 @@ export const createExpense = async (req: Request, res: Response) => {
     const expense = await expenseService.createExpense(userId, data);
     return res.status(201).json(expense);
   } catch (error) {
-    console.error('Error creating expense:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

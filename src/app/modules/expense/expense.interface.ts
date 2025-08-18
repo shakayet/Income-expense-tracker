@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-export interface IExpense extends Document {
+export type IExpense = {
   userId: Types.ObjectId;
   amount: number;
   category: Types.ObjectId | string;
