@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 
-export interface INotification {
+export type INotification = {
   userId: Types.ObjectId;
   type: 'monthly-report' | 'yearly-report' | 'budget-warning' | 'budget-exceeded';
   title: string;
