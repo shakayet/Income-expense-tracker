@@ -1,3 +1,4 @@
+/* eslint-env node */
 import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.join(process.cwd(), '.env') });
@@ -6,8 +7,10 @@ export default {
   ip_address: process.env.IP_ADDRESS,
   database_url: process.env.DATABASE_URL,
   node_env: process.env.NODE_ENV,
-  port: process.env.PORT,
-  bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
+  port: process.env.PORT ? Number(process.env.PORT) : undefined,
+  bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS
+    ? Number(process.env.BCRYPT_SALT_ROUNDS)
+    : undefined,
   jwt: {
     jwt_secret: process.env.JWT_SECRET,
     jwt_expire_in: process.env.JWT_EXPIRE_IN,
@@ -20,7 +23,7 @@ export default {
   email: {
     from: process.env.EMAIL_FROM,
     user: process.env.EMAIL_USER,
-    port: process.env.EMAIL_PORT,
+    port: process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined,
     host: process.env.EMAIL_HOST,
     pass: process.env.EMAIL_PASS,
   },
