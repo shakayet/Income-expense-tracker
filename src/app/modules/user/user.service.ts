@@ -65,7 +65,7 @@ const updateProfileToDB = async (
   }
 
   //unlink file here
-  if (payload.image) {
+  if (payload.image && isExistUser.image) {
     unlinkFile(isExistUser.image);
   }
 
@@ -111,7 +111,7 @@ const updatePin = async (userId: string, oldPin: string, newPin: string) => {
   const hashedNewPin = await bcrypt.hash(newPin, 10);
   user.pin = hashedNewPin;
   // await user.save();
-  const result = await User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     userId,
     { pin: hashedNewPin },
     { new: true }
