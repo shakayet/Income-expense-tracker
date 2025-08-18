@@ -1,5 +1,7 @@
 import path from 'path';
+import process from 'process';
 import DailyRotateFile from 'winston-daily-rotate-file';
+// eslint-disable-next-line @typescript-eslint/no-var-requires, no-undef
 const { createLogger, format, transports } = require('winston');
 const { combine, timestamp, label, printf } = format;
 
