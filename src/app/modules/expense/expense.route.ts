@@ -3,8 +3,6 @@ import * as expenseController from './expense.controller';
 import auth from '../../middlewares/auth';
 import validateRequest from '../../middlewares/validateRequest';
 import { createExpenseZodSchema,  expenseUpdateSchema } from './expense.zod';
-import * as ocrController from './expense.ocr.controller';
-import fileUploadHandler from '../../middlewares/fileUploadHandler';
 import { uploadTextAndExtractExpense } from './expense.ocr.controller';
 
 const router = express.Router();
