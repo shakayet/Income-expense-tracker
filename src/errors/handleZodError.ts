@@ -2,6 +2,7 @@ import { ZodError } from 'zod';
 import { IErrorMessage } from '../types/errors.types';
 
 const handleZodError = (error: ZodError) => {
+  // eslint-disable-next-line no-console
   console.log(error.errors);
   const errorMessages: IErrorMessage[] = error.errors.map(el => {
     return {
