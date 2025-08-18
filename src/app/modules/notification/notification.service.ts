@@ -1,9 +1,9 @@
 import { Notification } from './notification.model';
 import { INotification } from './notification.interface';
 import { socketHelper } from '../../../helpers/socketHelper'; // socket instance
-import { JwtPayload } from 'jsonwebtoken';
-import { sendMonthlyAndYearlyNotifications } from '../../../util/notificationTrigger';
-import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
+// import { JwtPayload } from 'jsonwebtoken';
+// import { sendMonthlyAndYearlyNotifications } from '../../../util/notificationTrigger';
+// import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
 // import { sendPushNotification } from '../helpers/push';
 import { sendPushNotification } from '../../../helpers/push';
 
@@ -13,24 +13,38 @@ export const getUserNotifications = async (userId: string) => {
 };
 
 // CREATE NOTIFICATION
-export const createNotification = async (data: any, userId: string) => {
+import { User } from '../user/user.model';
+export const createNotification = async (
+  data: Partial<INotification> & { title: string; message: string },
+  userId: string
+) => {
   const userIdString = userId.toString();
   const created = await Notification.create({ ...data, userId: userIdString });
-  console.log('notification created:', created);
 
   if (socketHelper.io && userIdString) {
     socketHelper.io.emit(`notification::${userIdString}`, created);
   }
 
   // Fetch user to get fcmToken
-  const { User } = require('../user/user.model');
   const user = await User.findById(userIdString);
   if (user && user.fcmToken) {
-    await sendPushNotification({
-      token: user.fcmToken,
-      title: created.title,
-      body: created.message,
-    });
+    let token: string | undefined;
+    if (typeof user.fcmToken === 'string') {
+      token = user.fcmToken;
+    } else if (
+      user.fcmToken &&
+      typeof user.fcmToken === 'object' &&
+      'type' in user.fcmToken
+    ) {
+      token = String(user.fcmToken.type);
+    }
+    if (token) {
+      await sendPushNotification({
+        token,
+        title: created.title,
+        body: created.message,
+      });
+    }
   }
   return created;
 };
