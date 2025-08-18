@@ -19,7 +19,7 @@ const handleStripeWebhook = async (req: Request, res: Response) => {
     // Verify the event signature
     try {
         event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
-        console.log('body', event);
+        // console.log('body', event);
     } catch (error) {
         throw new ApiError(StatusCodes.BAD_REQUEST, `Webhook signature verification failed. ${error}`);
     }
