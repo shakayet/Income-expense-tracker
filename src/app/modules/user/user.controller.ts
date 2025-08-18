@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
 import { getSingleFilePath } from '../../../shared/getFilePath';
@@ -6,22 +6,23 @@ import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
 import { User } from './user.model';
 
-const createUser = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const { ...userData } = req.body;
-    const result = await UserService.createUserToDB(userData);
+const createUser = catchAsync(async (req: Request, res: Response) => {
+  const { ...userData } = req.body;
+  const result = await UserService.createUserToDB(userData);
 
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'User created successfully',
-      data: result,
-    });
-  }
-);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'User created successfully',
+    data: result,
+  });
+});
 
 const getUserProfile = catchAsync(async (req: Request, res: Response) => {
-  const user = req.user;
+  const user = req.user as { id?: string } | undefined;
+  if (!user || !user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const result = await UserService.getUserProfileFromDB(user);
 
   sendResponse(res, {
@@ -44,28 +45,32 @@ const getAllUsers = catchAsync(async (req: Request, res: Response) => {
 });
 
 //update profile
-const updateProfile = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const user = req.user;
-    let image = getSingleFilePath(req.files, 'image');
-
-    const data = {
-      image,
-      ...req.body,
-    };
-    const result = await UserService.updateProfileToDB(user, data);
-
-    sendResponse(res, {
-      success: true,
-      statusCode: StatusCodes.OK,
-      message: 'Profile updated successfully',
-      data: result,
-    });
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  const user = req.user as { id?: string } | undefined;
+  if (!user || !user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
-);
+  const image = getSingleFilePath(req.files, 'image');
+
+  const data = {
+    image,
+    ...req.body,
+  };
+  const result = await UserService.updateProfileToDB(user, data);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: 'Profile updated successfully',
+    data: result,
+  });
+});
 
 const updateFcmToken = async (req: Request, res: Response) => {
-  const userId = req.user.id; // extracted from JWT middleware
+  const userId = (req.user as { id?: string } | undefined)?.id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const { fcmToken } = req.body;
 
   if (!fcmToken) {
@@ -85,13 +90,16 @@ const updateFcmToken = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: 'FCM token updated successfully' });
   } catch (error) {
-    console.error('Error updating FCM token:', error);
+    // Optionally log error
     res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 const setPin = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = (req.user as { id?: string } | undefined)?.id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const { pin } = req.body;
 
   if (!pin || pin.length !== 4) {
@@ -109,7 +117,10 @@ const setPin = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updatePin = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = (req.user as { id?: string } | undefined)?.id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const { oldPin, newPin } = req.body;
 
   if (!oldPin || !newPin || newPin.length !== 4) {
@@ -126,7 +137,10 @@ const updatePin = catchAsync(async (req: Request, res: Response) => {
 });
 
 const verifyPin = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user.id;
+  const userId = (req.user as { id?: string } | undefined)?.id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const { pin } = req.body;
 
   if (!pin || pin.length !== 4) {
