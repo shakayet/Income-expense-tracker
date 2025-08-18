@@ -1,6 +1,8 @@
+/* eslint-disable no-console */
 import axios from 'axios';
+import config from '../config';
 
-interface PushNotificationPayload {
+export type PushNotificationPayload = {
   token: string;
   title: string;
   body: string;
@@ -11,7 +13,9 @@ export const sendPushNotification = async ({
   title,
   body,
 }: PushNotificationPayload): Promise<void> => {
-  const serverKey = process.env.FCM_SERVER_KEY;
+
+  const serverKey = config.fcm_server_key;
+  
   if (!serverKey) {
     throw new Error('FCM_SERVER_KEY is not set in environment variables');
   }

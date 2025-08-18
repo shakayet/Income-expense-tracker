@@ -7,6 +7,7 @@ export default {
   ip_address: process.env.IP_ADDRESS,
   database_url: process.env.DATABASE_URL,
   node_env: process.env.NODE_ENV,
+  fcm_server_key: process.env.FCM_SERVER_KEY,
   port: process.env.PORT ? Number(process.env.PORT) : undefined,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS
     ? Number(process.env.BCRYPT_SALT_ROUNDS)
