@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 
-export interface ICategory {
+export type ICategory = {
   userId: Types.ObjectId;
   name: string;
   icon: string;
