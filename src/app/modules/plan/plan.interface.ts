@@ -1,12 +1,12 @@
 import { Model } from "mongoose";
 
 export type IPlan = {
-    title: String;
-    description: String;
-    price: Number;
+    title: string;
+    description: string;
+    price: number;
     duration: '1 month' | '3 months' | '6 months' | '1 year'; 
     paymentType: 'Monthly' | 'Yearly';
-    productId?: String;
+    productId?: string;
     paymentLink?: string;
     status: 'Active' | 'Delete'
 }
