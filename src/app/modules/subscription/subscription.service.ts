@@ -7,12 +7,12 @@ import QueryBuilder from '../../builder/QueryBuilder';
 
 const subscriptionDetailsFromDB = async (
   user: JwtPayload
-): Promise<ISubscription | {}> => {
+): Promise<ISubscription | null> => {
   const subscription = await Subscription.findOne({ user: user.id })
     .populate('plan', 'title price duration ')
     .lean();
   if (!subscription) {
-    return {}; // Return empty object if no subscription found
+    return null; // Return null if no subscription found
   }
 
   const subscriptionFromStripe = await stripe.subscriptions.retrieve(
@@ -36,7 +36,10 @@ const subscriptionDetailsFromDB = async (
 
 const subscriptionsFromDB = async (
   query: Record<string, unknown>
-): Promise<{ subscriptions: ISubscription[]; pagination: any }> => {
+): Promise<{
+  subscriptions: unknown[];
+  pagination: Record<string, unknown>;
+}> => {
   const result = new QueryBuilder(Subscription.find(), query).paginate();
   const subscriptions = await result.modelQuery
     .populate([
