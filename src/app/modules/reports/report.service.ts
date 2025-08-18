@@ -1,6 +1,6 @@
 import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
-import { Types } from 'mongoose';
+// import { Types } from 'mongoose';
 import { Budget } from '../budget/budget.model';
 
 export const getMonthlyReport = async (userId: string, month: string) => {
@@ -22,9 +22,11 @@ export const getMonthlyReport = async (userId: string, month: string) => {
 
   for (const i of incomes)
     incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
-  for (const e of expenses)
-    expenseByCategory[e.category] =
-      (expenseByCategory[e.category] || 0) + e.amount;
+  for (const e of expenses) {
+    const catKey =
+      typeof e.category === 'string' ? e.category : e.category?.toString();
+    expenseByCategory[catKey] = (expenseByCategory[catKey] || 0) + e.amount;
+  }
 
   const incomeCategoryPercentage = Object.entries(incomeByCategory)
     .map(([category, amount]) => ({
@@ -43,7 +45,7 @@ export const getMonthlyReport = async (userId: string, month: string) => {
   const budget = budgetDoc?.amount || 0;
   const savings = (totalIncome - totalExpense).toFixed(2);
 
-  const budgetUsedPercentage = ((totalExpense / budget) * 100 ).toFixed(2);
+  const budgetUsedPercentage = ((totalExpense / budget) * 100).toFixed(2);
 
   return {
     month,
@@ -80,9 +82,11 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   for (const i of incomeDocs)
     incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
-  for (const e of expenseDocs)
-    expenseByCategory[e.category] =
-      (expenseByCategory[e.category] || 0) + e.amount;
+  for (const e of expenseDocs) {
+    const catKey =
+      typeof e.category === 'string' ? e.category : e.category?.toString();
+    expenseByCategory[catKey] = (expenseByCategory[catKey] || 0) + e.amount;
+  }
 
   const incomeCategoryPercentage = Object.entries(incomeByCategory)
     .map(([category, amount]) => ({
@@ -100,7 +104,7 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   const savings = (totalIncome - totalExpense).toFixed(2);
 
-  const budgetUsedPercentage = ((totalExpense / totalBudget) * 100 ).toFixed(2);
+  const budgetUsedPercentage = ((totalExpense / totalBudget) * 100).toFixed(2);
 
   return {
     year,
