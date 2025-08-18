@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { IExpense } from './expense.interface';
 
 const ExpenseSchema: Schema = new Schema<IExpense>({
