@@ -32,6 +32,12 @@ export const uploadTextAndExtractExpense = catchAsync(
     };
 
     const userId = req.user?.id;
+    if (!userId) {
+      return res.status(httpStatus.UNAUTHORIZED).json({
+        success: false,
+        message: 'Unauthorized: User ID not found',
+      });
+    }
     const result = await expenseService.createExpense(userId, expensePayload);
 
     sendResponse(res, {

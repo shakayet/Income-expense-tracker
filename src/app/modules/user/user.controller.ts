@@ -50,7 +50,8 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
   if (!user || !user.id) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  const image = getSingleFilePath(req.files, 'image');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const image = getSingleFilePath(req.files as any, 'image');
 
   const data = {
     image,

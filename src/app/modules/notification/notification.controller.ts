@@ -6,6 +6,9 @@ import httpStatus from 'http-status';
 import sendResponse from '../../../shared/sendResponse';
 
 export const getNotifications = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const userId = req.user.id;
   const notifications = await NotificationService.getUserNotifications(userId);
   res.json({ success: true, data: notifications });
@@ -20,6 +23,9 @@ export const markAsRead = async (req: Request, res: Response) => {
 // only for creating notifications (temporary)
 
 export const postNotifications = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const userId = req.user.id;
   const payLoad = req.body;
   const notifications = await NotificationService.createNotification(

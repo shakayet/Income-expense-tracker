@@ -16,6 +16,12 @@ const subscriptions = catchAsync( async(req: Request, res: Response)=>{
 });
 
 const subscriptionDetails = catchAsync( async(req: Request, res: Response)=>{
+    if (!req.user) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+            success: false,
+            message: "Unauthorized: User not found",
+        });
+    }
     const result = await SubscriptionService.subscriptionDetailsFromDB(req.user);
 
     sendResponse(res, {

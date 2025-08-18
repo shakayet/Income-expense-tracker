@@ -6,6 +6,9 @@ import { Category } from '../category/category.model';
 
 export const createExpense = async (req: Request, res: Response) => {
   try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
     const userId = req.user.id;
     const data = req.body;
 
@@ -37,6 +40,9 @@ export const createExpense = async (req: Request, res: Response) => {
 };
 
 export const getExpenses = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const userId = new Types.ObjectId(req.user.id);
   const expenses = await expenseService.getExpensesByUser(userId);
   res.json(expenses);
@@ -44,6 +50,9 @@ export const getExpenses = async (req: Request, res: Response) => {
 
 export const updateExpense = async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const userId = new Types.ObjectId(req.user.id);
   const validated = expenseUpdateSchema.safeParse(req.body);
 
@@ -76,6 +85,9 @@ export const updateExpense = async (req: Request, res: Response) => {
 
 export const deleteExpense = async (req: Request, res: Response) => {
   const { id } = req.params;
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
   const userId = new Types.ObjectId(req.user.id);
   const result = await expenseService.deleteExpense(id, userId);
 
