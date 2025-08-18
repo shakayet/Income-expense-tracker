@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Model, Types } from 'mongoose';
 
 export type IResetToken = {
@@ -7,6 +8,6 @@ export type IResetToken = {
 };
 
 export type ResetTokenModel = {
-  isExistToken(token: string): any;
-  isExpireToken(token: string): boolean;
+  isExistToken(_token: string): Promise<IResetToken | null>;
+  isExpireToken(_token: string): boolean;
 } & Model<IResetToken>;
