@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { Model, Types } from 'mongoose';
 import { USER_ROLES } from '../../../enums/user';
 
@@ -12,7 +13,7 @@ export type IUser = {
   image?: string;
   pin?: string;
   verified: boolean;
-  fcmToken?: { type: String } | null;
+  fcmToken?: { type: string } | null;
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;
@@ -21,7 +22,7 @@ export type IUser = {
 };
 
 export type UserModal = {
-  isExistUserById(id: string): any;
-  isExistUserByEmail(email: string): any;
+  isExistUserById(id: string): Promise<IUser | null>;
+  isExistUserByEmail(email: string): Promise<IUser | null>;
   isMatchPassword(password: string, hashPassword: string): boolean;
 } & Model<IUser>;
