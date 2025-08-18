@@ -1,5 +1,4 @@
 import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
-import { createNotification } from '../notification/notification.service';
 import { IExpense } from './expense.interface';
 import Expense from './expense.model';
 import { Types } from 'mongoose';
@@ -7,17 +6,17 @@ import { Types } from 'mongoose';
 export const createExpense = async (
   userId: string,
   data: Partial<IExpense>
-) => {
+): Promise<IExpense> => {
   // Determine the date for the expense (use data.date or current date)
-  const dateObj = (data as any)?.date
-    ? new Date((data as any).date)
-    : new Date();
+
+  const dateObj =
+    data && typeof data.createdAt === 'string'
+      ? new Date(data.createdAt)
+      : new Date();
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
 
-
   await checkAndNotifyBudgetUsage(userId.toString(), `${year}-${month}`);
-  console.log(Expense);
   return Expense.create({ ...data, userId });
 };
 
