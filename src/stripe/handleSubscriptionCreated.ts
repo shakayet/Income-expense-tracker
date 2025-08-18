@@ -7,7 +7,20 @@ import { Plan } from '../app/modules/plan/plan.model';
 import ApiError from '../errors/ApiError';
 
 // Helper function to create new subscription in database
-const createNewSubscription = async (payload: any) => {
+import { Types } from 'mongoose';
+type SubscriptionPayload = {
+  customerId: string;
+  price: number;
+  user: Types.ObjectId;
+  plan: Types.ObjectId;
+  trxId: string;
+  subscriptionId: string;
+  status: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+};
+
+const createNewSubscription = async (payload: SubscriptionPayload) => {
   const isExistSubscription = await Subscription.findOne({
     user: payload.user,
   });
@@ -35,27 +48,29 @@ export const handleSubscriptionCreated = async (data: Stripe.Subscription) => {
       subscription.latest_invoice as string
     )) as Stripe.Invoice;
 
-    const trxId = (invoice as any)?.payment_intent as string;
+    // Stripe.Invoice does not have payment_intent, use invoice.id as transaction id
+    const trxId = invoice.id || '';
     const amountPaid = (invoice?.total || 0) / 100;
 
     // Find user and pricing plan
-    const user = (await User.findOne({ email: customer.email })) as any;
-    if (!user) {
+    const user = await User.findOne({ email: customer.email });
+    if (!user || !user._id) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Invalid User!');
     }
 
-    const plan = (await Plan.findOne({ productId })) as any;
-    if (!plan) {
+    const plan = await Plan.findOne({ productId });
+    if (!plan || !plan._id) {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Invalid Plan!');
     }
 
     // Get the current period start and end dates (Unix timestamps)
-    const currentPeriodStart = new Date(
-      (subscription as any)?.current_period_start * 1000
-    ).toISOString(); // Convert to human-readable date
-    const currentPeriodEnd = new Date(
-      (subscription as any)?.current_period_end * 1000
-    ).toISOString();
+    // Stripe.Subscription does not have current_period_start/end, use start_date and end_date if available
+    const currentPeriodStart = subscription.start_date
+      ? new Date(subscription.start_date * 1000).toISOString()
+      : '';
+    const currentPeriodEnd = subscription.ended_at
+      ? new Date(subscription.ended_at * 1000).toISOString()
+      : '';
 
     const payload = {
       customerId: customer.id,
