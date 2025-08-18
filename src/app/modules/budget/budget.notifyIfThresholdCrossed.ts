@@ -19,26 +19,30 @@ export const notifyIfThresholdCrossed = async ({
 
   for (const t of thresholds) {
     if (percentage >= t && !existingThresholds.includes(t)) {
-      await createNotification({
-        userId,
-        type: 'budget-exceeded',
-        title: `Budget Alert: ${t}% reached`,
-        message: `You've reached ${t}% of your budget for month ${month}`,
-        reportMonth: month,
-      });
+      await createNotification(
+        {
+          type: 'budget-exceeded',
+          title: `Budget Alert: ${t}% reached`,
+          message: `You've reached ${t}% of your budget for month ${month}`,
+          reportMonth: month,
+        },
+        userId.toString()
+      );
 
       existingThresholds.push(t);
     }
   }
 
   if (percentage > 100 && !existingThresholds.includes(101)) {
-    await createNotification({
-      userId,
-      type: 'budget-exceeded',
-      title: `Budget Exceeded!`,
-      message: `You have exceeded your budget for ${month}`,
-      reportMonth: month,
-    });
+    await createNotification(
+      {
+        type: 'budget-exceeded',
+        title: `Budget Exceeded!`,
+        message: `You have exceeded your budget for ${month}`,
+        reportMonth: month,
+      },
+      userId.toString()
+    );
 
     existingThresholds.push(101);
   }

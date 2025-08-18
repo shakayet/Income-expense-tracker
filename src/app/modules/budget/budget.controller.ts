@@ -1,14 +1,14 @@
 import { Request, Response } from 'express';
-// ...existing code...
-import { Income } from '../income/income.model';
+// import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
 import { createNotification } from '../notification/notification.service';
 import { hasReachedThreshold } from '../../../util/notificationThresholdTracker';
 import { getMonthlyReport } from '../reports/report.service';
+import mongoose from 'mongoose';
 
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req.user as { id?: string } | undefined)?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { month, amount } = req.body;
@@ -32,7 +32,7 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
 
 export const getBudgetDetails = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req.user as { id?: string } | undefined)?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const month = req.params.month;
@@ -53,7 +53,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     const expensesAgg = await Expense.aggregate([
       {
         $match: {
-          userId: new (require('mongoose').Types.ObjectId)(userId),
+          userId: new mongoose.Types.ObjectId(userId),
           createdAt: {
             $gte: new Date(`${month}-01T00:00:00Z`),
             $lt: new Date(
@@ -68,7 +68,6 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     ]);
 
     const totalExpense = expensesAgg.length ? expensesAgg[0].totalExpense : 0;
-
     const remaining = budget.amount - totalExpense;
     const percentageLeft =
       budget.amount > 0 ? (remaining / budget.amount) * 100 : 0;
@@ -93,7 +92,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
 
 export const updateBudget = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user?.id;
+    const userId = (req.user as { id?: string } | undefined)?.id;
     const { month } = req.params;
     const { amount } = req.body;
 
@@ -106,10 +105,12 @@ export const updateBudget = async (req: Request, res: Response) => {
     );
 
     if (!budget) {
-      return res.status(404).json({
-        success: false,
-        message: 'Budget not found for the given month',
-      });
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: 'Budget not found for the given month',
+        });
     }
 
     res.status(200).json({ success: true, data: budget });
@@ -144,7 +145,7 @@ export const checkAndNotifyBudgetUsage = async (
   const usedPercent = (expense / budgetAmount) * 100;
 
   const thresholds = [50, 75, 90, 100];
-  console.log("it's working: ");
+  // it's working:
 
   for (const threshold of thresholds) {
     // console.log(hasReachedThreshold(userId, monthKey, threshold))
