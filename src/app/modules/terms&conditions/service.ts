@@ -13,8 +13,13 @@ const getAllTerms = async () => {
   return await TermsModel.find().sort({ effectiveDate: -1 });
 };
 
+export const updateTerms = async (id: string, payload: Partial<ITerms>) => {
+  return await TermsModel.findByIdAndUpdate(id, payload, { new: true });
+};
+
 export const TermsService = {
   createTerms,
   getLatestTerms,
   getAllTerms,
+  updateTerms,
 };

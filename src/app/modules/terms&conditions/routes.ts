@@ -13,6 +13,13 @@ router
   )
   .get(TermsController.getAllTerms); // Get all versions
 
+router
+  .route("/:id")
+  .patch(
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+    TermsController.updateTerms 
+);
+
 router.route('/latest').get(TermsController.getLatestTerms);
 
 export const TermsRoutes = router;

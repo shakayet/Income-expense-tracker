@@ -11,6 +11,7 @@ import { PlanRoutes } from '../app/modules/plan/plan.routes';
 import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
 import { CategoryRoutes } from '../app/modules/category/category.route';
 import comparePriceRoutes from '../app/modules/price-compare/compare.route';
+import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 
 const router = express.Router();
 
@@ -56,6 +57,10 @@ const apiRoutes = [
   {
     path: '/compare-price',
     route: comparePriceRoutes,
+  },
+  {
+    path: '/terms-conditions',
+    route: TermsRoutes,
   }
 
 ];

@@ -28,8 +28,19 @@ const getAllTerms = async (req: Request, res: Response) => {
   });
 };
 
+export const updateTerms = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await TermsService.updateTerms(id, req.body);
+  res.json({
+    success: true,
+    message: "Terms updated successfully",
+    data: result,
+  });
+};
+
 export const TermsController = {
   createTerms,
   getLatestTerms,
   getAllTerms,
+  updateTerms,
 };
