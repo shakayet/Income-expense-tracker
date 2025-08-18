@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import cors from 'cors';
 import express, { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
