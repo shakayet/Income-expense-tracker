@@ -23,4 +23,4 @@ router
     deleteReview
   );
 
-export default router;
+export const ReviewRoutes = router;

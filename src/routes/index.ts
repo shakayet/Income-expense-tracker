@@ -12,7 +12,7 @@ import { SubscriptionRoutes } from '../app/modules/subscription/subscription.rou
 import { CategoryRoutes } from '../app/modules/category/category.route';
 import comparePriceRoutes from '../app/modules/price-compare/compare.route';
 import { TermsRoutes } from '../app/modules/terms&conditions/routes';
-import { ReviewRoutes } from '../app/modules/review/review.route'
+import { ReviewRoutes } from '../app/modules/review/review.route';
 
 const router = express.Router();
 
@@ -45,12 +45,8 @@ const apiRoutes = [
     path: '/notifications',
     route: NotificationRoutes,
   },
-  { path: '/plan', 
-    route: PlanRoutes, 
-  },
-  { path: '/subscription', 
-    route: SubscriptionRoutes,
-  },
+  { path: '/plan', route: PlanRoutes },
+  { path: '/subscription', route: SubscriptionRoutes },
   {
     path: '/category',
     route: CategoryRoutes,
@@ -62,10 +58,12 @@ const apiRoutes = [
   {
     path: '/terms-conditions',
     route: TermsRoutes,
-  }
-
-,
-  { path: '/review', route: ReviewRoutes }];
+  },
+  {
+    path: '/review',
+    route: ReviewRoutes,
+  },
+];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
 
