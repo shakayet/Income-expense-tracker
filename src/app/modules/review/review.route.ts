@@ -3,9 +3,11 @@ import {
   createReview,
   getAllReviews,
   deleteReview,
+  getReviewAnalytics,
 } from './review.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
+// import { createReviewController, getReviewAnalyticsController } from './review.controller';
 
 const router = express.Router();
 
@@ -18,9 +20,12 @@ router
 
 router
   .route('/:id')
-  .delete(
-    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-    deleteReview
-  );
+  .delete(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), deleteReview);
+
+router.get(
+  '/analytics',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  getReviewAnalytics
+);
 
 export const ReviewRoutes = router;

@@ -1,8 +1,8 @@
 import { Review } from './review.model';
-// import { IReview } from './review.interface';
+import { IReview } from './review.interface';
 
-export const createReview = async (userId: string, rating: number, comment: string) => {
-  const review = new Review({ user: userId, rating, comment });
+export const createReview = async (payload: IReview) => {
+  const review = new Review(payload);
   return await review.save();
 };
 
@@ -41,4 +41,8 @@ export const getRecentReviews = async () => {
     .sort({ createdAt: -1 })
     .limit(3)
     .populate('user', 'name'); // assuming user model has 'name'
+};
+
+export const deleteReview = async (id: string) => {
+  return await Review.findByIdAndDelete(id);
 };
