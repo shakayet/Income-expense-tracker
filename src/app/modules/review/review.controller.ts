@@ -29,19 +29,6 @@ export const getAllReviews = async (_req: Request, res: Response) => {
   }
 };
 
-export const getUserReviews = async (req: Request, res: Response) => {
-  try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ success: false, message: 'Unauthorized' });
-    }
-    const reviews = await ReviewService.getUserReviews(req.user.id);
-    res.status(200).json({ success: true, data: reviews });
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'An error occurred';
-    res.status(500).json({ success: false, message });
-  }
-};
 
 export const deleteReview = async (req: Request, res: Response) => {
   try {
