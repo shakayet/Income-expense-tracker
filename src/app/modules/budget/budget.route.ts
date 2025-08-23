@@ -3,6 +3,7 @@ import {
   setOrUpdateBudget,
   getBudgetDetails,
   updateBudget,
+  removeBudgetCategory,
 } from './budget.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import { setBudgetZodSchema, updateBudgetZodSchema } from './budget.zod';
@@ -19,5 +20,9 @@ router
   .route('/:month')
   .get(getBudgetDetails)
   .patch(validateRequest(updateBudgetZodSchema), updateBudget);
+
+router
+  .route('/:month/:category')
+  .delete(removeBudgetCategory);
 
 export const BudgetRoutes = router;
