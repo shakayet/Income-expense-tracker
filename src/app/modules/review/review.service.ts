@@ -11,28 +11,52 @@ export const getAllReviews = async () => {
 };
 
 // Analytics: rating percentage breakdown
-export const getRatingStats = async () => {
-  const total = await Review.countDocuments();
-  if (total === 0) return {};
+export const getAnalytics = async () => {
+  // Fetch all reviews
+  const reviews = await Review.find().sort({ createdAt: -1 });
 
-  const ratings = await Review.aggregate([
-    {
-      $group: {
-        _id: '$rating',
-        count: { $sum: 1 },
-      },
-    },
-    {
-      $project: {
-        rating: '$_id',
-        percentage: { $multiply: [{ $divide: ['$count', total] }, 100] },
-        _id: 0,
-      },
-    },
-    { $sort: { rating: -1 } },
-  ]);
+  const totalReviews = reviews.length;
+  if (totalReviews === 0) {
+    return {
+      stats: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
+      averageRating: 0,
+      totalReviews: 0,
+      recent: [],
+    };
+  }
 
-  return ratings; // [{rating:5, percentage:50}, {rating:4, percentage:30}, ...]
+  // Rating count
+  const counts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  let sumRating = 0;
+
+  reviews.forEach(r => {
+    const rating = Math.round(r.rating);
+    if (rating >= 1 && rating <= 5) {
+      counts[rating] += 1;
+      sumRating += r.rating;
+    }
+  });
+
+  // Convert counts → percentage
+  const stats: Record<number, number> = {};
+  for (const key in counts) {
+    const numKey = Number(key) as 1 | 2 | 3 | 4 | 5;
+    stats[numKey] = parseFloat(
+      ((counts[numKey] / totalReviews) * 100).toFixed(2)
+    ); // percentage
+  }
+
+  const averageRating = parseFloat((sumRating / totalReviews).toFixed(2));
+
+  // Recent 3 reviews
+  const recent = reviews.slice(0, 3).map(r => ({
+    user: r.user,
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.get('createdAt'),
+  }));
+
+  return { stats, averageRating, totalReviews, recent };
 };
 
 // Recent reviews (latest 3)

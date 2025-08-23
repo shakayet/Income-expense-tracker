@@ -3,7 +3,7 @@ import {
   createReview,
   getAllReviews,
   deleteReview,
-  getReviewAnalytics,
+  getAnalyticsController,
 } from './review.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
@@ -25,7 +25,7 @@ router
 router.get(
   '/analytics',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  getReviewAnalytics
+  getAnalyticsController
 );
 
 export const ReviewRoutes = router;

@@ -41,11 +41,10 @@ export const deleteReview = async (req: Request, res: Response) => {
 };
 
 // --- New: Analytics + Recent Reviews ---
-export const getReviewAnalytics = async (_req: Request, res: Response) => {
+export const getAnalyticsController = async (_req: Request, res: Response) => {
   try {
-    const stats = await ReviewService.getRatingStats();
-    const recent = await ReviewService.getRecentReviews();
-    res.status(200).json({ success: true, stats, recent });
+    const analytics = await ReviewService.getAnalytics();
+    res.status(200).json({ success: true, ...analytics });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'An error occurred';
     res.status(500).json({ success: false, message });
