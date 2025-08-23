@@ -1,25 +1,42 @@
 import { Request, Response } from 'express';
-// import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
 import { createNotification } from '../notification/notification.service';
 import { hasReachedThreshold } from '../../../util/notificationThresholdTracker';
 import { getMonthlyReport } from '../reports/report.service';
 import mongoose from 'mongoose';
+import { Budget } from './budget.model';
 
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
     const userId = (req.user as { id?: string } | undefined)?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const { month, amount } = req.body;
+    const { month, category, amount } = req.body;
 
     let budget = await Budget.findOne({ userId, month });
 
     if (budget) {
-      budget.amount = amount;
+      // Check if category already exists
+      const categoryIndex = budget.categories.findIndex(
+        cat => cat.category === category
+      );
+
+      if (categoryIndex > -1) {
+        // Update existing category
+        budget.categories[categoryIndex].amount = amount;
+      } else {
+        // Add new category
+        budget.categories.push({ category, amount });
+      }
+      
       await budget.save();
     } else {
-      budget = await Budget.create({ userId, month, amount });
+      // Create new budget with the category
+      budget = await Budget.create({ 
+        userId, 
+        month, 
+        categories: [{ category, amount }] 
+      });
     }
 
     res.status(200).json({ success: true, data: budget });
@@ -49,8 +66,8 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
         .json({ success: false, message: 'Budget not set for this month' });
     }
 
-    // Calculate total expenses for the month
-    const expensesAgg = await Expense.aggregate([
+    // Calculate expenses by category
+    const expensesByCategory = await Expense.aggregate([
       {
         $match: {
           userId: new mongoose.Types.ObjectId(userId),
@@ -64,23 +81,49 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           },
         },
       },
-      { $group: { _id: null, totalExpense: { $sum: '$amount' } } },
+      {
+        $group: {
+          _id: '$category',
+          totalExpense: { $sum: '$amount' }
+        }
+      }
     ]);
 
-    const totalExpense = expensesAgg.length ? expensesAgg[0].totalExpense : 0;
-    const remaining = budget.amount - totalExpense;
-    const percentageLeft =
-      budget.amount > 0 ? (remaining / budget.amount) * 100 : 0;
+    // Create a map of expenses by category
+    const expenseMap = new Map();
+    expensesByCategory.forEach(item => {
+      expenseMap.set(item._id, item.totalExpense);
+    });
+
+    // Calculate category details with spending information
+    const categoryDetails = budget.categories.map(cat => {
+      const spent = expenseMap.get(cat.category) || 0;
+      
+      return {
+        category: cat.category,
+        budgeted: cat.amount,
+        spent: spent,
+        remaining: cat.amount - spent,
+        percentage: cat.percentage,
+        spentPercentage: cat.amount > 0 ? (spent / cat.amount) * 100 : 0
+      };
+    });
+
+    // Calculate total expenses
+    const totalExpense = expensesByCategory.reduce((sum, item) => sum + item.totalExpense, 0);
+    const remaining = budget.totalAmount - totalExpense;
+    const percentageLeft = budget.totalAmount > 0 ? (remaining / budget.totalAmount) * 100 : 0;
 
     res.status(200).json({
       success: true,
       data: {
-        budgetAmount: budget.amount.toFixed(2),
+        totalBudget: budget.totalAmount.toFixed(2),
         totalExpense: totalExpense.toFixed(2),
         remaining: remaining.toFixed(2),
         percentageLeft: percentageLeft.toFixed(2),
         percentageUsed: (100 - percentageLeft).toFixed(2),
         month,
+        categories: categoryDetails
       },
     });
   } catch (error) {
@@ -94,16 +137,12 @@ export const updateBudget = async (req: Request, res: Response) => {
   try {
     const userId = (req.user as { id?: string } | undefined)?.id;
     const { month } = req.params;
-    const { amount } = req.body;
+    const { category, amount } = req.body;
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    const budget = await Budget.findOneAndUpdate(
-      { userId, month },
-      { amount },
-      { new: true, upsert: false }
-    );
-
+    const budget = await Budget.findOne({ userId, month });
+    
     if (!budget) {
       return res
         .status(404)
@@ -113,6 +152,23 @@ export const updateBudget = async (req: Request, res: Response) => {
         });
     }
 
+    // Find the category and update it
+    const categoryIndex = budget.categories.findIndex(
+      cat => cat.category === category
+    );
+
+    if (categoryIndex === -1) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: 'Category not found in budget',
+        });
+    }
+
+    budget.categories[categoryIndex].amount = amount;
+    await budget.save();
+
     res.status(200).json({ success: true, data: budget });
   } catch (error) {
     res
@@ -121,7 +177,38 @@ export const updateBudget = async (req: Request, res: Response) => {
   }
 };
 
-import { Budget } from './budget.model';
+export const removeBudgetCategory = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    const { month, category } = req.params;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const budget = await Budget.findOne({ userId, month });
+    
+    if (!budget) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: 'Budget not found for the given month',
+        });
+    }
+
+    // Remove the category
+    budget.categories = budget.categories.filter(
+      cat => cat.category !== category
+    );
+    
+    await budget.save();
+
+    res.status(200).json({ success: true, data: budget });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to remove category', error });
+  }
+};
 
 export const getBudgetByUserAndMonth = async (
   userId: string,
@@ -135,21 +222,15 @@ export const checkAndNotifyBudgetUsage = async (
   monthKey: string
 ) => {
   const budget = await getBudgetByUserAndMonth(userId, monthKey);
-  // console.log("Checking budget usage for user:", budget);
-  // console.log("it's working: ",budget);
   if (!budget) return;
 
   const report = await getMonthlyReport(userId, monthKey);
   const expense = report.totalExpense ?? 0;
-  const budgetAmount = budget.amount;
-  const usedPercent = (expense / budgetAmount) * 100;
+  const usedPercent = budget.totalAmount > 0 ? (expense / budget.totalAmount) * 100 : 0;
 
   const thresholds = [50, 75, 90, 100];
-  // it's working:
 
   for (const threshold of thresholds) {
-    // console.log(hasReachedThreshold(userId, monthKey, threshold))
-
     if (
       usedPercent >= threshold &&
       hasReachedThreshold(userId, monthKey, threshold)
@@ -158,10 +239,10 @@ export const checkAndNotifyBudgetUsage = async (
         {
           type: 'budget-warning',
           title: `You've used ${threshold}% of your budget!`,
-          message: `You’ve spent ${threshold}% of your monthly budget for ${monthKey}`,
+          message: `You've spent ${threshold}% of your monthly budget for ${monthKey}`,
           reportMonth: monthKey.split('-')[1],
           reportYear: monthKey.split('-')[0],
-          budgetAmount: budgetAmount,
+          budgetAmount: budget.totalAmount,
           usedAmount: expense,
         },
         userId
@@ -174,10 +255,10 @@ export const checkAndNotifyBudgetUsage = async (
       {
         type: 'budget-warning',
         title: `Budget Exceeded!`,
-        message: `You’ve exceeded your monthly budget for ${monthKey}`,
+        message: `You've exceeded your monthly budget for ${monthKey}`,
         reportMonth: monthKey.split('-')[1],
         reportYear: monthKey.split('-')[0],
-        budgetAmount: budgetAmount,
+        budgetAmount: budget.totalAmount,
         usedAmount: expense,
       },
       userId
