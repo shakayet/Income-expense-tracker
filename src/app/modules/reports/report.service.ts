@@ -42,7 +42,7 @@ export const getMonthlyReport = async (userId: string, month: string) => {
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
-  const budget = budgetDoc?.amount || 0;
+  const budget = budgetDoc?.get('amount') || 0;
   const savings = (totalIncome - totalExpense).toFixed(2);
 
   const budgetUsedPercentage = ((totalExpense / budget) * 100).toFixed(2);
@@ -75,7 +75,7 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   const totalIncome = incomeDocs.reduce((acc, item) => acc + item.amount, 0);
   const totalExpense = expenseDocs.reduce((acc, item) => acc + item.amount, 0);
-  const totalBudget = budgets.reduce((acc, b) => acc + b.amount, 0);
+  const totalBudget = budgets.reduce((acc, b) => acc + (b.get('amount') || 0), 0);
 
   const incomeByCategory: Record<string, number> = {};
   const expenseByCategory: Record<string, number> = {};
