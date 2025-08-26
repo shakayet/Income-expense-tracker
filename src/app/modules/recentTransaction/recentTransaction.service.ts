@@ -11,11 +11,11 @@ export const getRecentTransactions = async (
   const skip = (page - 1) * limit;
 
   // Fetch incomes & expenses
-  const incomes = await Income.find({ user: userId })
-    .select('_id source amount createdAt')
+  const incomes = await Income.find({ userId })
+    .select('_id source amount date')
     .lean();
 
-  const expenses = await ExpenseModel.find({ user: userId })
+  const expenses = await ExpenseModel.find({ userId })
     .select('_id category amount createdAt')
     .lean();
 

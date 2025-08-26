@@ -20,7 +20,7 @@ export const createExpense = async (req: Request, res: Response) => {
     const catObj = new Types.ObjectId(data.category);
 
     // Check if category exists and is accessible by the user
-    const category = await Category.findOne({ userId: catObj });
+    const category = await Category.findOne({ _id: catObj });
 
     if (
       !category ||
@@ -31,8 +31,11 @@ export const createExpense = async (req: Request, res: Response) => {
         .json({ message: 'Category not found or not accessible' });
     }
 
-    // Create expense
-    const expense = await expenseService.createExpense(userId, data);
+    // Create expense, ensure category is ObjectId
+    const expense = await expenseService.createExpense(userId, {
+      ...data,
+      category: catObj,
+    });
     return res.status(201).json(expense);
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error' });
