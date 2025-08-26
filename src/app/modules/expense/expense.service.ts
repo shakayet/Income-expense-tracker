@@ -1,4 +1,4 @@
-import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
+import { notifyOnBudgetThreshold } from '../budget/budget.service';
 import { IExpense } from './expense.interface';
 import Expense from './expense.model';
 import { Types } from 'mongoose';
@@ -16,7 +16,7 @@ export const createExpense = async (
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
 
-  await checkAndNotifyBudgetUsage(userId.toString(), `${year}-${month}`);
+  await notifyOnBudgetThreshold(userId.toString(), `${year}-${month}`);
   return Expense.create({ ...data, userId });
 };
 

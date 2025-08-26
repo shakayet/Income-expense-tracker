@@ -2,11 +2,12 @@
 import { Request, Response } from 'express';
 import { Budget } from './budget.model';
 import mongoose from 'mongoose';
+import Expense from '../expense/expense.model';
 import {
   // notifyOnBudgetThreshold,
   getBudgetByUserAndMonth,
 } from './budget.service';
-import Expense from '../expense/expense.model';
+
 
 // Set a budget with specific categories
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
