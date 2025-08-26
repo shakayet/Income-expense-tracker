@@ -13,6 +13,7 @@ import { CategoryRoutes } from '../app/modules/category/category.route';
 import comparePriceRoutes from '../app/modules/price-compare/compare.route';
 import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 import { ReviewRoutes } from '../app/modules/review/review.route';
+import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
 
 const router = express.Router();
 
@@ -63,6 +64,10 @@ const apiRoutes = [
     path: '/review',
     route: ReviewRoutes,
   },
+  {
+    path: '/recent-transactions',
+    route: recentTransaction,
+  }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
