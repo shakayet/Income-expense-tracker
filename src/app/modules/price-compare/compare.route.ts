@@ -1,7 +1,20 @@
 import express from 'express';
-import { comparePriceController } from './compare.controller';
+import {
+  addCostCompare,
+  comparePriceController,
+  getCostCompareHistory,
+} from './compare.controller';
+import { USER_ROLES } from '../../../enums/user';
+import auth from '../../middlewares/auth';
 
-const comparePriceRoutes = express.Router();
-comparePriceRoutes.route('/').post(comparePriceController);
+const router = express.Router();
+router.use(auth(USER_ROLES.USER));
 
-export default comparePriceRoutes;
+router.route('/')
+    .post(comparePriceController);  // searching for best prices
+
+router.route('/cost-compare')
+    .post(addCostCompare)
+    .get(getCostCompareHistory);
+
+export default router;

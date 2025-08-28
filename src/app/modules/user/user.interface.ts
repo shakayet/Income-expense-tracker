@@ -11,6 +11,7 @@ export type IUser = {
   password: string;
   preferredLanguage: string;
   image?: string;
+  currency?: string;
   pin?: string;
   verified: boolean;
   fcmToken?: { type: string } | null;

@@ -43,6 +43,11 @@ const userSchema = new Schema<IUser, UserModal>(
       default: 'English',
       enum: ['English', 'Italian'],
     },
+    currency: {
+      type: String,
+      enum: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
+      default: 'USD',
+    },
     fcmToken: { 
       type: String
     },

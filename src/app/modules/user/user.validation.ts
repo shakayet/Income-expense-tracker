@@ -8,6 +8,8 @@ const createUserZodSchema = z.object({
     password: z.string({ required_error: 'Password is required' }),
     preferredLanguage: z.string({ required_error: 'Location is required' }),
     profile: z.string().optional(),
+    currency: z.string().optional(),
+    pin: z.string().optional(),
   }),
 });
 
@@ -18,6 +20,8 @@ const updateUserZodSchema = z.object({
   password: z.string().optional(),
   preferredLanguage: z.string().optional(),
   image: z.string().optional(),
+  currency: z.string().optional(),
+  pin: z.string().optional(),
 });
 
 export const UserValidation = {
