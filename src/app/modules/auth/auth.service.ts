@@ -76,6 +76,47 @@ const forgetPasswordToDB = async (email: string) => {
   await User.findOneAndUpdate({ email }, { $set: { authentication } });
 };
 
+//resend otp
+const resendOtpToDB = async (email: string) => {
+  const isExistUser = await User.findOne({ email });
+  if (!isExistUser) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
+  }
+
+  // If user already verified, no need to resend
+  if (isExistUser.verified) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      'Your account is already verified'
+    );
+  }
+
+  //generate new otp
+  const otp = generateOTP();
+  const values = {
+    name: isExistUser.name,
+    otp,
+    email: isExistUser.email!,
+  };
+
+  const resendTemplate = emailTemplate.createAccount(values);
+  emailHelper.sendEmail(resendTemplate);
+
+  //save otp to DB
+  const authentication = {
+    oneTimeCode: otp,
+    expireAt: new Date(Date.now() + 3 * 60000), // 3 minutes expiry
+  };
+
+  await User.findOneAndUpdate(
+    { _id: isExistUser._id },
+    { $set: { authentication } }
+  );
+
+  return { message: 'OTP resent successfully, please check your email' };
+};
+
+
 //verify email
 const verifyEmailToDB = async (payload: IVerifyEmail) => {
   const { email, oneTimeCode } = payload;
@@ -246,4 +287,5 @@ export const AuthService = {
   forgetPasswordToDB,
   resetPasswordToDB,
   changePasswordToDB,
+  resendOtpToDB,
 };
