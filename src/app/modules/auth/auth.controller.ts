@@ -54,6 +54,18 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const resendOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    const result = await AuthService.resendOtpToDB(email);
+    res.status(200).json({ success: true, message: result.message });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'An error occurred';
+    res.status(400).json({ success: false, message });
+  }
+};
+
+
 const changePassword = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
   if (!user) {
@@ -78,4 +90,5 @@ export const AuthController = {
   forgetPassword,
   resetPassword,
   changePassword,
+  resendOtp,
 };
