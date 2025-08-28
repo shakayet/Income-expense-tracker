@@ -84,12 +84,12 @@ const resendOtpToDB = async (email: string) => {
   }
 
   // If user already verified, no need to resend
-  if (isExistUser.verified) {
-    throw new ApiError(
-      StatusCodes.BAD_REQUEST,
-      'Your account is already verified'
-    );
-  }
+  // if (isExistUser.verified) {
+  //   throw new ApiError(
+  //     StatusCodes.BAD_REQUEST,
+  //     'Your account is already verified'
+  //   );
+  // }
 
   //generate new otp
   const otp = generateOTP();
