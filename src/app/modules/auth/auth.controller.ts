@@ -56,6 +56,12 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
 
 const changePassword = catchAsync(async (req: Request, res: Response) => {
   const user = req.user;
+  if (!user) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      message: 'Unauthorized: User not found',
+    });
+  }
   const { ...passwordData } = req.body;
   await AuthService.changePasswordToDB(user, passwordData);
 
