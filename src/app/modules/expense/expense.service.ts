@@ -35,3 +35,7 @@ export const updateExpense = (
 export const deleteExpense = (id: string, userId: Types.ObjectId) => {
   return Expense.findOneAndDelete({ _id: id, userId });
 };
+
+export const getExpenseById = (id: string, userId: Types.ObjectId) => {
+  return Expense.findOne({ _id: id, userId });
+};
