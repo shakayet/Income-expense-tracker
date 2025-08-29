@@ -17,6 +17,7 @@ router.route('/')
 
 
 router.route('/:id')
+  .get(expenseController.getExpense)  // Add this line
   .put(validateRequest(expenseUpdateSchema), expenseController.updateExpense)
   .delete(expenseController.deleteExpense);
 

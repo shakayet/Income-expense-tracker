@@ -97,3 +97,24 @@ export const deleteExpense = async (req: Request, res: Response) => {
   if (!result) return res.status(404).json({ message: 'Expense not found' });
   res.json(result);
 };
+
+export const getExpense = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid expense ID' });
+  }
+
+  const userId = new Types.ObjectId(req.user.id);
+  const expense = await expenseService.getExpenseById(id, userId);
+
+  if (!expense) {
+    return res.status(404).json({ message: 'Expense not found' });
+  }
+
+  res.json(expense);
+};

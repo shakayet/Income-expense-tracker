@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express';
 import { Income } from './income.model';
 
@@ -71,5 +72,51 @@ export const deleteIncome = async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ success: false, message: 'Failed to delete income', error });
+  }
+};
+
+export const getAllIncomes = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    const { month, page = 1, limit = 10 } = req.query;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    // Build filter object
+    const filter: any = { userId };
+    
+    // Add month filter if provided
+    if (month) {
+      filter.month = month;
+    }
+
+    // Calculate pagination
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get incomes with pagination
+    const incomes = await Income.find(filter)
+      .sort({ date: -1 }) // Sort by date descending (newest first)
+      .skip(skip)
+      .limit(limitNum);
+
+    // Get total count for pagination info
+    const total = await Income.countDocuments(filter);
+
+    res.status(200).json({
+      success: true,
+      data: incomes,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum
+      }
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to fetch incomes', error });
   }
 };

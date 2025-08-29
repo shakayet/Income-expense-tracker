@@ -1,5 +1,5 @@
 import express from 'express';
-import { createIncome, deleteIncome, updateIncome } from './income.controller';
+import { createIncome, deleteIncome, getAllIncomes, updateIncome } from './income.controller';
 // import validateRequest from '../../middlewares/validateRequest';
 // import { createIncomeZodSchema } from './income.zod';
 import auth from '../../middlewares/auth';
@@ -9,7 +9,8 @@ const router = express.Router();
 router.use(auth(USER_ROLES.USER));
 
 router.route('/')
-  .post(createIncome);
+  .post(createIncome)
+  .get(getAllIncomes);
 
 router.route('/:id')
   .patch(updateIncome)
