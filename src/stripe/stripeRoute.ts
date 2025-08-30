@@ -26,7 +26,7 @@ router.patch(
         ...(description && { description }),
       });
 
-      // Optionally update price (Stripe recommends creating a new price and deactivating the old one)
+      // Optionally update price (Stripe recommends creating a new price and deactivating the old one
       let newPrice = null;
       if (price && currency && interval) {
         // Deactivate old prices
