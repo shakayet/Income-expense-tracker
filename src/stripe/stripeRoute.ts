@@ -2,9 +2,35 @@
 
 import express, { Request, Response } from 'express';
 import stripe from '../config/stripe';
+
 import { createStripeProductCatalog } from './createStripeProductCatalog';
+import { deleteStripeProductCatalog } from './deleteStripeProductCatalog';
 
 const router = express.Router();
+// Route to delete a Stripe plan/product
+router.delete(
+  '/delete-plan/:productId',
+  async (req: Request, res: Response) => {
+    try {
+      const { productId } = req.params;
+      if (!productId) {
+        return res.status(400).json({ message: 'Product ID is required.' });
+      }
+      const result = await deleteStripeProductCatalog(productId);
+      if (!result.success) {
+        return res
+          .status(400)
+          .json({ message: 'Failed to delete Stripe plan/product.' });
+      }
+      return res
+        .status(200)
+        .json({ message: 'Stripe plan/product deleted successfully.' });
+    } catch (error) {
+      console.error('Stripe plan deletion error:', error);
+      return res.status(500).json({ message: 'Something went wrong', error });
+    }
+  }
+);
 
 router.route('/').post(async (req: Request, res: Response) => {
   const { id } = req.body;
