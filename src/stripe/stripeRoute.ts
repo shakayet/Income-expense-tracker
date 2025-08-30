@@ -2,13 +2,49 @@
 
 import express, { Request, Response } from 'express';
 import stripe from '../config/stripe';
-
 import { createStripeProductCatalog } from './createStripeProductCatalog';
 import { deleteStripeProductCatalog } from './deleteStripeProductCatalog';
 import auth from '../app/middlewares/auth';
 import { USER_ROLES } from '../enums/user';
 
 const router = express.Router();
+
+// Route to get all Stripe subscription plans
+router.get('/plans', async (req: Request, res: Response) => {
+  try {
+    // Fetch all products (plans) from Stripe
+    const products = await stripe.products.list({ active: true });
+    // Fetch all prices for these products
+    const prices = await stripe.prices.list({ active: true });
+
+    // Map products to include their prices
+    const plans = products.data.map(product => {
+      const productPrices = prices.data.filter(
+        price => price.product === product.id
+      );
+      return {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        active: product.active,
+        prices: productPrices.map(price => ({
+          id: price.id,
+          unit_amount: price.unit_amount,
+          currency: price.currency,
+          recurring: price.recurring,
+        })),
+      };
+    });
+
+    return res.status(200).json({ plans });
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error fetching Stripe plans:', error);
+    return res.status(500).json({ message: 'Something went wrong', error });
+  }
+});
+
+
 // Route to delete a Stripe plan/product
 router.delete(
   '/delete-plan/:productId',
@@ -34,6 +70,7 @@ router.delete(
     }
   }
 );
+
 
 router.route('/').post(async (req: Request, res: Response) => {
   const { id } = req.body;
@@ -61,28 +98,30 @@ router.route('/').post(async (req: Request, res: Response) => {
   }
 });
 
+
 // Route to create a Stripe plan/product
 router.post(
-    '/create-plan',
-    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), 
-    async (req: Request, res: Response) => {
-  try {
-    const planPayload = req.body;
-    const result = await createStripeProductCatalog(planPayload);
-    if (!result) {
-      return res
-        .status(400)
-        .json({ message: 'Failed to create Stripe plan/product.' });
+  '/create-plan',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  async (req: Request, res: Response) => {
+    try {
+      const planPayload = req.body;
+      const result = await createStripeProductCatalog(planPayload);
+      if (!result) {
+        return res
+          .status(400)
+          .json({ message: 'Failed to create Stripe plan/product.' });
+      }
+      return res.status(201).json({
+        message: 'Stripe plan/product created successfully.',
+        productId: result.productId,
+        paymentLink: result.paymentLink,
+      });
+    } catch (error) {
+      console.error('Stripe plan creation error:', error);
+      return res.status(500).json({ message: 'Something went wrong', error });
     }
-    return res.status(201).json({
-      message: 'Stripe plan/product created successfully.',
-      productId: result.productId,
-      paymentLink: result.paymentLink,
-    });
-  } catch (error) {
-    console.error('Stripe plan creation error:', error);
-    return res.status(500).json({ message: 'Something went wrong', error });
   }
-});
+);
 
 export const stripePayments = router;
