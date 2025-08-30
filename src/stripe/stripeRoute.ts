@@ -26,23 +26,47 @@ router.patch(
         ...(description && { description }),
       });
 
-      // Optionally update price (Stripe recommends creating a new price and deactivating the old one
+      // Optionally update price (Stripe recommends creating a new price and deactivating the old one)
       let newPrice = null;
-      if (price && currency && interval) {
-        // Deactivate old prices
+      if (price || currency || interval) {
+        // Fetch current active price for the product
         const prices = await stripe.prices.list({
           product: productId,
           active: true,
         });
+        const currentPrice = prices.data[0];
+        if (!currentPrice) {
+          return res
+            .status(400)
+            .json({ message: 'No active price found for this product.' });
+        }
+        // Deactivate old prices
         await Promise.all(
           prices.data.map(p => stripe.prices.update(p.id, { active: false }))
         );
+        // Use provided values or fallback to current values
+        const newUnitAmount =
+          price !== undefined
+            ? Number(price) * 100
+            : currentPrice.unit_amount ?? 0;
+        const newCurrency = currency || currentPrice.currency;
+        const newInterval =
+          interval ||
+          (currentPrice.recurring && currentPrice.recurring.interval) ||
+          'month';
+        const newIntervalCount =
+          interval_count ||
+          (currentPrice.recurring && currentPrice.recurring.interval_count) ||
+          1;
         // Create new price
         newPrice = await stripe.prices.create({
           product: productId,
-          unit_amount: Number(price) * 100,
-          currency,
-          recurring: { interval, interval_count: interval_count || 1 },
+          unit_amount: newUnitAmount,
+          currency: newCurrency,
+          recurring: {
+            interval: newInterval,
+            interval_count: newIntervalCount,
+          },
         });
       }
 
