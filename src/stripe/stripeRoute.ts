@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-
 import express, { Request, Response } from 'express';
 import stripe from '../config/stripe';
 import { createStripeProductCatalog } from './createStripeProductCatalog';
@@ -8,6 +7,57 @@ import auth from '../app/middlewares/auth';
 import { USER_ROLES } from '../enums/user';
 
 const router = express.Router();
+
+// Route to edit a Stripe plan/product
+router.patch(
+  '/edit-plan/:productId',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  async (req: Request, res: Response) => {
+    try {
+      const { productId } = req.params;
+      const { name, description, price, currency, interval, interval_count } =
+        req.body;
+      if (!productId) {
+        return res.status(400).json({ message: 'Product ID is required.' });
+      }
+      // Update product details
+      const updatedProduct = await stripe.products.update(productId, {
+        ...(name && { name }),
+        ...(description && { description }),
+      });
+
+      // Optionally update price (Stripe recommends creating a new price and deactivating the old one)
+      let newPrice = null;
+      if (price && currency && interval) {
+        // Deactivate old prices
+        const prices = await stripe.prices.list({
+          product: productId,
+          active: true,
+        });
+        await Promise.all(
+          prices.data.map(p => stripe.prices.update(p.id, { active: false }))
+        );
+        // Create new price
+        newPrice = await stripe.prices.create({
+          product: productId,
+          unit_amount: Number(price) * 100,
+          currency,
+          recurring: { interval, interval_count: interval_count || 1 },
+        });
+      }
+
+      return res.status(200).json({
+        message: 'Stripe plan/product updated successfully.',
+        product: updatedProduct,
+        price: newPrice,
+      });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Stripe plan update error:', error);
+      return res.status(500).json({ message: 'Something went wrong', error });
+    }
+  }
+);
 
 // Route to get all Stripe subscription plans
 router.get('/plans', async (req: Request, res: Response) => {
@@ -44,7 +94,6 @@ router.get('/plans', async (req: Request, res: Response) => {
   }
 });
 
-
 // Route to delete a Stripe plan/product
 router.delete(
   '/delete-plan/:productId',
@@ -71,7 +120,6 @@ router.delete(
   }
 );
 
-
 router.route('/').post(async (req: Request, res: Response) => {
   const { id } = req.body;
 
@@ -97,7 +145,6 @@ router.route('/').post(async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Something went wrong', error });
   }
 });
-
 
 // Route to create a Stripe plan/product
 router.post(
