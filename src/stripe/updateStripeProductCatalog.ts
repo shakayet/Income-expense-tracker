@@ -21,14 +21,6 @@ export const updateStripeProductCatalog = async (
       interval = 'month';
       intervalCount = 1;
       break;
-    case '3 months':
-      interval = 'month';
-      intervalCount = 3;
-      break;
-    case '6 months':
-      interval = 'month';
-      intervalCount = 6;
-      break;
     case '1 year':
       interval = 'year';
       intervalCount = 1;

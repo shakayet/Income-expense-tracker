@@ -12,7 +12,7 @@ export const createStripeProductCatalog = async ( payload: Partial<IPlan>): Prom
         description: payload.description as string,
     });
 
-    let interval: 'month' | 'year' = 'month'; 
+    let interval: 'month' | 'year'; 
     let intervalCount = 1; 
 
     // Map duration to interval_count
@@ -20,14 +20,6 @@ export const createStripeProductCatalog = async ( payload: Partial<IPlan>): Prom
         case '1 month':
             interval = 'month';
             intervalCount = 1;
-            break;
-        case '3 months':
-            interval = 'month';
-            intervalCount = 3;
-            break;
-        case '6 months':
-            interval = 'month';
-            intervalCount = 6;
             break;
         case '1 year':
             interval = 'year';

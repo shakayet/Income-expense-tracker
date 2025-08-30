@@ -14,6 +14,7 @@ import comparePriceRoutes from '../app/modules/price-compare/compare.route';
 import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 import { ReviewRoutes } from '../app/modules/review/review.route';
 import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
+import { stripePayments } from '../stripe/stripeRoute';
 
 const router = express.Router();
 
@@ -67,7 +68,11 @@ const apiRoutes = [
   {
     path: '/recent-transactions',
     route: recentTransaction,
-  }
+  },
+  {
+    path: '/payments',
+    route: stripePayments,
+  },
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
