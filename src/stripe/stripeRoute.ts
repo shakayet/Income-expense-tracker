@@ -2,35 +2,55 @@
 
 import express, { Request, Response } from 'express';
 import stripe from '../config/stripe';
+import { createStripeProductCatalog } from './createStripeProductCatalog';
 
 const router = express.Router();
 
-router
-  .route('/')
-  .post(async (req: Request, res: Response) => {
-    const { id } = req.body;
+router.route('/').post(async (req: Request, res: Response) => {
+  const { id } = req.body;
 
-    console.log('Checkout session request received with plan ID:', id);
+  console.log('Checkout session request received with plan ID:', id);
 
-    try {
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: id, // this should be the Stripe Price ID, not the plan id
-            quantity: 1,
-          },
-        ],
-        success_url: `http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `http://localhost:5173/cancelled`,
-      });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: id, // this should be the Stripe Price ID, not the plan id
+          quantity: 1,
+        },
+      ],
+      success_url: `http://localhost:5173/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `http://localhost:5173/cancelled`,
+    });
 
-      return res.status(200).json({ url: session.url });
-    } catch (error) {
-      console.error('Checkout session error:', error);
-      return res.status(500).json({ message: 'Something went wrong', error });
+    return res.status(200).json({ url: session.url });
+  } catch (error) {
+    console.error('Checkout session error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error });
+  }
+});
+
+// Route to create a Stripe plan/product
+router.post('/create-plan', async (req: Request, res: Response) => {
+  try {
+    const planPayload = req.body;
+    const result = await createStripeProductCatalog(planPayload);
+    if (!result) {
+      return res
+        .status(400)
+        .json({ message: 'Failed to create Stripe plan/product.' });
     }
-  });
+    return res.status(201).json({
+      message: 'Stripe plan/product created successfully.',
+      productId: result.productId,
+      paymentLink: result.paymentLink,
+    });
+  } catch (error) {
+    console.error('Stripe plan creation error:', error);
+    return res.status(500).json({ message: 'Something went wrong', error });
+  }
+});
 
 export const stripePayments = router;
