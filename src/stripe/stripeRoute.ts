@@ -5,11 +5,14 @@ import stripe from '../config/stripe';
 
 import { createStripeProductCatalog } from './createStripeProductCatalog';
 import { deleteStripeProductCatalog } from './deleteStripeProductCatalog';
+import auth from '../app/middlewares/auth';
+import { USER_ROLES } from '../enums/user';
 
 const router = express.Router();
 // Route to delete a Stripe plan/product
 router.delete(
   '/delete-plan/:productId',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
   async (req: Request, res: Response) => {
     try {
       const { productId } = req.params;
@@ -59,7 +62,10 @@ router.route('/').post(async (req: Request, res: Response) => {
 });
 
 // Route to create a Stripe plan/product
-router.post('/create-plan', async (req: Request, res: Response) => {
+router.post(
+    '/create-plan',
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), 
+    async (req: Request, res: Response) => {
   try {
     const planPayload = req.body;
     const result = await createStripeProductCatalog(planPayload);
