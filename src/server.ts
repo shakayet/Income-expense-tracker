@@ -1,3 +1,4 @@
+import './util/notification.cron';
 import dotenv from 'dotenv';
 import process from 'process';
 

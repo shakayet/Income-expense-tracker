@@ -15,7 +15,7 @@ export const notifyIfThresholdCrossed = async ({
   existingThresholds?: number[];
 }) => {
   const percentage = (totalExpense / budgetAmount) * 100;
-  const thresholds = [50, 70, 80, 90, 100];
+  const thresholds = [50, 75, 90, 100];
 
   for (const t of thresholds) {
     if (percentage >= t && !existingThresholds.includes(t)) {
@@ -23,12 +23,12 @@ export const notifyIfThresholdCrossed = async ({
         {
           type: 'budget-exceeded',
           title: `Budget Alert: ${t}% reached`,
-          message: `You've reached ${t}% of your budget for month ${month}`,
+          message: `You've used ${t}% of your monthly budget for ${month}. Tap to see details.`,
           reportMonth: month,
+          detailsLink: `/api/v1/budget/details?month=${month}`,
         },
         userId.toString()
       );
-
       existingThresholds.push(t);
     }
   }
@@ -38,12 +38,12 @@ export const notifyIfThresholdCrossed = async ({
       {
         type: 'budget-exceeded',
         title: `Budget Exceeded!`,
-        message: `You have exceeded your budget for ${month}`,
+        message: `You've exceeded your monthly budget for ${month}. Tap to see details.`,
         reportMonth: month,
+        detailsLink: `/api/v1/budget/details?month=${month}`,
       },
       userId.toString()
     );
-
     existingThresholds.push(101);
   }
 
