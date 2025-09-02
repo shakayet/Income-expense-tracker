@@ -12,58 +12,15 @@ import { Document } from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
-  // Check if user already exists
-  const existingUser = await User.findOne({ email: payload.email });
-
-  if (existingUser) {
-    // If user is verified, throw error
-    if (existingUser.verified) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'User already exists');
-    }
-
-    // Check if OTP is still valid
-    if (
-      existingUser.authentication?.expireAt &&
-      existingUser.authentication.expireAt > new Date()
-    ) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'User already exists');
-    }
-
-    // Generate new OTP and update existing user
-    const otp = generateOTP();
-    const authentication = {
-      oneTimeCode: otp,
-      expireAt: new Date(Date.now() + 3 * 60000),
-    };
-
-    // Update user with new OTP
-    await User.findByIdAndUpdate(
-      existingUser._id,
-      { authentication },
-      { new: true }
-    );
-
-    // Resend email with new OTP
-    const values = {
-      name: existingUser.name,
-      otp: otp,
-      email: existingUser.email!,
-    };
-    const createAccountTemplate = emailTemplate.createAccount(values);
-    emailHelper.sendEmail(createAccountTemplate);
-
-    return existingUser;
-  }
-
-  // Create new user if doesn't exist
+  //set role
   payload.role = USER_ROLES.USER;
-  const createUser = await User.create(payload);
   
+  const createUser = await User.create(payload);
   if (!createUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
   }
 
-  // Generate OTP and send email
+  //send email
   const otp = generateOTP();
   const values = {
     name: createUser.name,
@@ -73,16 +30,14 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   const createAccountTemplate = emailTemplate.createAccount(values);
   emailHelper.sendEmail(createAccountTemplate);
 
-  // Save OTP to database
+  //save to DB
   const authentication = {
     oneTimeCode: otp,
     expireAt: new Date(Date.now() + 3 * 60000),
   };
-  
-  await User.findByIdAndUpdate(
-    createUser._id,
-    { $set: { authentication } },
-    { new: true }
+  await User.findOneAndUpdate(
+    { _id: createUser._id },
+    { $set: { authentication } }
   );
 
   return createUser;
