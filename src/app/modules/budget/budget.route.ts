@@ -13,7 +13,7 @@ import {
   setBudgetZodSchema,
   addBudgetCategoryZodSchema,
   updateBudgetCategoryZodSchema,
-  setMonthlyBudgetZodSchema,
+  // setMonthlyBudgetZodSchema,
   updateMonthlyBudgetZodSchema,
 } from './budget.zod';
 import auth from '../../middlewares/auth';
@@ -25,7 +25,7 @@ router.use(auth(USER_ROLES.USER));
 
 router
   .route('/monthly')
-  .post(validateRequest(setMonthlyBudgetZodSchema), setMonthlyBudget);
+  .post(setMonthlyBudget);
 
 router
   .route('/monthly/:month')

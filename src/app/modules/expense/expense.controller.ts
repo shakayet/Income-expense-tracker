@@ -22,6 +22,7 @@ export const createExpense = async (req: Request, res: Response) => {
     // Check if category exists and is accessible by the user
     const category = await Category.findOne({ _id: catObj });
 
+    
     if (
       !category ||
       (category.userId && category.userId.toString() !== userId.toString())

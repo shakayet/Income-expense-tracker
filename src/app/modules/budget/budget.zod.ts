@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // Budget Category Schema
 const budgetCategorySchema = z.object({
-  category: z.string(),
+  categoryId: z.string(),
   amount: z.number().min(0),
 });
 
@@ -10,8 +10,12 @@ const budgetCategorySchema = z.object({
 // Only requires categories, as totalBudget is handled by a different endpoint
 export const setBudgetZodSchema = z.object({
   body: z.object({
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Invalid month format (YYYY-MM)'),
-    categories: z.array(budgetCategorySchema).min(1, 'At least one category must be provided'),
+    month: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Invalid month format (YYYY-MM)'),
+    categories: z
+      .array(budgetCategorySchema)
+      .min(1, 'At least one category must be provided'),
   }),
 });
 
@@ -19,7 +23,9 @@ export const setBudgetZodSchema = z.object({
 export const setMonthlyBudgetZodSchema = z.object({
   body: z.object({
     totalBudget: z.number().min(0),
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Invalid month format (YYYY-MM)'),
+    month: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Invalid month format (YYYY-MM)'),
   }),
 });
 
@@ -33,7 +39,7 @@ export const updateMonthlyBudgetZodSchema = z.object({
 // Add Budget Category
 export const addBudgetCategoryZodSchema = z.object({
   body: z.object({
-    category: z.string(),
+    categoryId: z.string(),
     amount: z.number().min(0),
   }),
 });

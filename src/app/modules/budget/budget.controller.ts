@@ -1,33 +1,58 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 import { Request, Response } from 'express';
 import { Budget } from './budget.model';
 import mongoose from 'mongoose';
 import Expense from '../expense/expense.model';
+import process from 'process';
 import {
   // notifyOnBudgetThreshold,
   getBudgetByUserAndMonth,
 } from './budget.service';
 
-
-// Set a budget with specific categories
+// Set or update a budget with an array of categories
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
     const userId = (req.user as { id?: string } | undefined)?.id;
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-
     const { month, categories } = req.body;
-
+    if (!month || !Array.isArray(categories)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Month and categories array are required',
+      });
+    }
+    // Convert all categoryId to ObjectId
+    const parsedCategories = categories.map(cat => {
+      if (!cat.categoryId || cat.amount === undefined) {
+        throw new Error('Each category must have categoryId and amount');
+      }
+      // Always store as ObjectId
+      let categoryObjId = cat.categoryId;
+      if (typeof categoryObjId === 'string') {
+        if (!mongoose.Types.ObjectId.isValid(categoryObjId)) {
+          throw new Error('Invalid categoryId format');
+        }
+        categoryObjId = new mongoose.Types.ObjectId(categoryObjId);
+      }
+      return {
+        categoryId: categoryObjId,
+        amount: cat.amount,
+      };
+    });
     let budget = await Budget.findOne({ userId, month });
-
     if (budget) {
-      budget.categories = categories;
+      budget.categories = parsedCategories;
       await budget.save();
     } else {
-      budget = await Budget.create({ userId, month, categories });
+      budget = await Budget.create({
+        userId,
+        month,
+        categories: parsedCategories,
+      });
     }
-
     res.status(200).json({
       success: true,
       message: 'Budget categories set successfully',
@@ -35,9 +60,11 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error setting budget categories:', error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to set budget', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to set budget categories',
+      error: process.env.NODE_ENV === 'development' ? error : {},
+    });
   }
 };
 
@@ -116,56 +143,94 @@ export const updateMonthlyBudget = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-      console.error('Error updating monthly budget:', error);
-      res
-        .status(500)
-        .json({ success: false, message: 'Failed to update monthly budget', error });
-    }
+    console.error('Error updating monthly budget:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update monthly budget',
+      error,
+    });
+  }
 };
 
 // Add a new category to an existing budget or create a new one
 export const addBudgetCategory = async (req: Request, res: Response) => {
   try {
-    const userId = (req.user as { id?: string } | undefined)?.id;
-    if (!userId) {
+    const userIdRaw = (req.user as { id?: string } | undefined)?.id;
+    if (!userIdRaw) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-
+    const userId = new mongoose.Types.ObjectId(userIdRaw);
     const { month } = req.params;
-    const { category, amount } = req.body;
-
+    const { categoryId, amount } = req.body;
+    if (!categoryId || amount === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category ID and amount are required',
+      });
+    }
+    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Category ID format',
+      });
+    }
+    const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
     let budget = await Budget.findOne({ userId, month });
-
     if (!budget) {
       budget = await Budget.create({
         userId,
         month,
-        categories: [{ category, amount }],
+        categories: [{ categoryId: categoryObjectId, amount }],
       });
     } else {
-      const existingCategoryIndex = budget.categories?.findIndex(
-        (cat) => cat.category.toLowerCase() === category.toLowerCase()
-      );
-
-      if (existingCategoryIndex !== undefined && existingCategoryIndex >= 0) {
-        budget.categories![existingCategoryIndex].amount = amount;
-      } else {
-        budget.categories?.push({ category, amount });
+      // Ensure categories is always an array
+      if (!Array.isArray(budget.categories)) {
+        budget.categories = [];
       }
-
+      // Prevent duplicate categoryId
+      const existingCategoryIndex = budget.categories.findIndex(
+        cat =>
+          cat.categoryId &&
+          cat.categoryId.toString() === categoryObjectId.toString()
+      );
+      if (existingCategoryIndex !== -1) {
+        budget.categories[existingCategoryIndex].amount = amount;
+      } else {
+        if (!categoryObjectId) {
+          console.error('categoryObjectId is undefined! Payload:', req.body);
+          return res.status(400).json({
+            success: false,
+            message:
+              'categoryObjectId is undefined. Check your request payload.',
+          });
+        }
+        console.log('Adding category:', { categoryObjectId, amount });
+        // Remove any invalid categories before pushing
+        budget.categories = budget.categories.filter(cat => cat.categoryId);
+        // Always push as ObjectId
+        let catObjId = categoryObjectId;
+        if (typeof catObjId === 'string') {
+          catObjId = new mongoose.Types.ObjectId(catObjId);
+        }
+        budget.categories.push({
+          categoryId: catObjId,
+          amount,
+        });
+      }
       await budget.save();
     }
-
     res.status(200).json({
       success: true,
-      message: `Budget category '${category}' added/updated successfully`,
+      message: 'Budget category added successfully',
       data: budget,
     });
   } catch (error) {
-      console.error('Error adding budget category:', error);
-      res
-        .status(500)
-        .json({ success: false, message: 'Failed to add budget category', error });
+    console.error('Error adding budget category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to add budget category',
+      error,
+    });
   }
 };
 
@@ -177,7 +242,7 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { month, category } = req.params;
+    const { month, categoryId } = req.params;
     const { amount } = req.body;
 
     const budget = await Budget.findOne({ userId, month });
@@ -188,7 +253,7 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
     }
 
     const categoryIndex = budget.categories?.findIndex(
-      (cat) => cat.category.toLowerCase() === category.toLowerCase()
+      cat => cat.categoryId.toString() === categoryId
     );
 
     if (categoryIndex === undefined || categoryIndex === -1) {
@@ -202,20 +267,22 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      message: `Budget category '${category}' updated successfully`,
+      message: `Budget category '${categoryId}' updated successfully`,
       data: {
         month: budget.month,
         totalBudget: budget.totalBudget,
         totalCategoryAmount: budget.totalCategoryAmount,
         categories: budget.categories,
-        updatedCategory: { category, amount },
+        updatedCategory: { categoryId, amount },
       },
     });
   } catch (error) {
     console.error('Error updating budget category:', error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to update budget category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update budget category',
+      error,
+    });
   }
 };
 
@@ -227,7 +294,7 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { month, category } = req.params;
+    const { month, categoryId } = req.params;
 
     const budget = await Budget.findOne({ userId, month });
     if (!budget) {
@@ -238,7 +305,7 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 
     const initialLength = budget.categories?.length;
     budget.categories = budget.categories?.filter(
-      (cat) => cat.category.toLowerCase() !== category.toLowerCase()
+      cat => cat.categoryId.toString() !== categoryId
     );
 
     if (!budget.categories || budget.categories.length === initialLength) {
@@ -251,7 +318,7 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      message: `Budget category '${category}' deleted successfully`,
+      message: `Budget category '${categoryId}' deleted successfully`,
       data: {
         month: budget.month,
         totalBudget: budget.totalBudget,
@@ -261,123 +328,359 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error deleting budget category:', error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to delete budget category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete budget category',
+      error,
+    });
   }
 };
 
 // Get budget details, including expense tracking
+// export const getBudgetDetails = async (req: Request, res: Response) => {
+//   try {
+//     const userId = (req.user as { id?: string } | undefined)?.id;
+//     if (!userId) {
+//       return res.status(401).json({ message: 'Unauthorized' });
+//     }
+
+//     const month = req.params.month;
+
+//     const budget = await getBudgetByUserAndMonth(userId, month);
+
+//     if (!budget) {
+//       return res
+//         .status(404)
+//         .json({ success: false, message: 'Budget not set for this month' });
+//     }
+
+//     // Calculate total expenses for the month grouped by category
+//     const expensesAgg = await Expense.aggregate([
+//       {
+//         $match: {
+//           userId: new mongoose.Types.ObjectId(userId),
+//           createdAt: {
+//             $gte: new Date(`${month}-01T00:00:00Z`),
+//             $lt: new Date(
+//               new Date(`${month}-01T00:00:00Z`).setMonth(
+//                 new Date(`${month}-01T00:00:00Z`).getMonth() + 1
+//               )
+//             ),
+//           },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: '$category',
+//           totalExpense: { $sum: '$amount' },
+//         },
+//       },
+//     ]);
+
+//     // Convert _id (category ObjectId) to string for keys in map
+//     const expenseMap = new Map(
+//       expensesAgg.map(exp => [exp._id?.toString(), exp.totalExpense])
+//     );
+
+//     const totalExpense = expensesAgg.reduce(
+//       (sum, exp) => sum + exp.totalExpense,
+//       0
+//     );
+
+//     console.log('Expense Map keys:', [...expenseMap.keys()]);
+
+    
+
+//     const effectiveTotalBudget = budget.totalBudget ?? budget.totalCategoryAmount;
+//     const totalRemaining = (effectiveTotalBudget ?? 0) - totalExpense;
+//     const totalPercentageUsed =
+//       effectiveTotalBudget && effectiveTotalBudget > 0
+//         ? (totalExpense / effectiveTotalBudget) * 100
+//         : 0;
+
+//     // Normalize all categoryIds to strings for matching
+//     const categories = (budget.categories ?? []).map(cat => ({
+//       ...cat,
+//       categoryId: cat.categoryId?.toString(),
+//     }));
+
+//     console.log('Budget categories:', categories.map(c => c.categoryId));
+
+
+
+//     const categoryDetails = categories.map(budgetCategory => {
+//       const amount =
+//         typeof budgetCategory.amount === 'number' ? budgetCategory.amount : 0;
+//       const spent = expenseMap.get(budgetCategory.categoryId) ?? 0;
+//       const remaining = amount - spent;
+//       const percentageUsed = amount > 0 ? (spent / amount) * 100 : 0;
+//       const percentageOfTotalBudget =
+//         effectiveTotalBudget && effectiveTotalBudget > 0
+//           ? (amount / effectiveTotalBudget) * 100
+//           : 0;
+
+//       return {
+//         categoryId: budgetCategory.categoryId,
+//         budgetAmount: amount.toFixed(2),
+//         spent: spent.toFixed(2),
+//         remaining: remaining.toFixed(2),
+//         percentageUsed: percentageUsed.toFixed(2),
+//         percentageOfTotalBudget: percentageOfTotalBudget.toFixed(2),
+//         status:
+//           percentageUsed >= 100
+//             ? 'exceeded'
+//             : percentageUsed >= 80
+//             ? 'warning'
+//             : 'good',
+//       };
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       data: {
+//         month,
+//         totalBudget: budget.totalBudget?.toFixed(2) ?? null,
+//         totalCategoryAmount: budget.totalCategoryAmount?.toFixed(2) ?? null,
+//         effectiveTotalBudget: effectiveTotalBudget?.toFixed(2) ?? '0.00',
+//         totalExpense: totalExpense.toFixed(2),
+//         totalRemaining: totalRemaining.toFixed(2),
+//         totalPercentageUsed: totalPercentageUsed.toFixed(2),
+//         totalPercentageLeft: (100 - totalPercentageUsed).toFixed(2),
+//         categories: categoryDetails,
+//         summary: {
+//           totalCategories: categories.length,
+//           categoriesExceeded: categoryDetails.filter(cat => cat.status === 'exceeded').length,
+//           categoriesInWarning: categoryDetails.filter(cat => cat.status === 'warning').length,
+//           categoriesGood: categoryDetails.filter(cat => cat.status === 'good').length,
+//           budgetType: budget.totalBudget ? 'monthly_budget_set' : 'category_budgets_only',
+//         },
+//       },
+//     });
+//   } catch (error) {
+//     console.error('Error getting budget details:', error);
+//     res
+//       .status(500)
+//       .json({ success: false, message: 'Failed to get budget details', error });
+//   }
+// };
+
+
 export const getBudgetDetails = async (req: Request, res: Response) => {
+  const userId = (req.user as { id?: string } | undefined)?.id;
   try {
-    const userId = (req.user as { id?: string } | undefined)?.id;
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    const { month } = req.params;
+
+    if (!userId || !month) {
+      return res.status(400).json({ success: false, message: 'userId and month are required' });
     }
 
-    const month = req.params.month;
+    const userIdObj = new mongoose.Types.ObjectId(userId);
 
-    const budget = await getBudgetByUserAndMonth(userId, month);
-    if (!budget) {
-      return res
-        .status(404)
-        .json({ success: false, message: 'Budget not set for this month' });
-    }
-
-    // Calculate total expenses for the month by category
-    const expensesAgg = await Expense.aggregate([
+    const budgetResult = await Budget.aggregate([
       {
-        $match: {
-          userId: new mongoose.Types.ObjectId(userId),
-          createdAt: {
-            $gte: new Date(`${month}-01T00:00:00Z`),
-            $lt: new Date(
-              new Date(`${month}-01T00:00:00Z`).setMonth(
-                new Date(`${month}-01T00:00:00Z`).getMonth() + 1
-              )
-            ),
+        $match: { userId: userIdObj, month },
+      },
+      {
+        $lookup: {
+          from: 'expenses',
+          let: { budgetUserId: '$userId', budgetMonth: '$month' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$userId', userIdObj] },
+                    { $gte: ['$createdAt', new Date(`${month}-01T00:00:00.000Z`)] },
+                    { $lt: ['$createdAt', new Date(`${month}-31T23:59:59.999Z`)] },
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: '$category',
+                totalSpent: { $sum: '$amount' },
+              },
+            },
+          ],
+          as: 'expensesByCategory',
+        },
+      },
+      // Map over categories array without unwind
+      {
+        $addFields: {
+          categories: {
+            $map: {
+              input: { $ifNull: ['$categories', []] },
+              as: 'cat',
+              in: {
+                categoryId: '$$cat.categoryId',
+                amount: '$$cat.amount',
+                spent: {
+                  $let: {
+                    vars: {
+                      spentEntry: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: '$expensesByCategory',
+                              cond: { $eq: ['$$this._id', '$$cat.categoryId'] },
+                            },
+                          },
+                          0,
+                        ],
+                      },
+                    },
+                    in: { $ifNull: ['$$spentEntry.totalSpent', 0] },
+                  },
+                },
+              },
+            },
           },
         },
       },
+      // Calculate remaining, percentageUsed, and status for each category
       {
-        $group: {
-          _id: '$category',
-          totalExpense: { $sum: '$amount' },
+        $addFields: {
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'cat',
+              in: {
+                categoryId: '$$cat.categoryId',
+                budgetAmount: '$$cat.amount',
+                spent: '$$cat.spent',
+                remaining: { $subtract: ['$$cat.amount', '$$cat.spent'] },
+                percentageUsed: {
+                  $cond: [
+                    { $gt: ['$$cat.amount', 0] },
+                    { $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] },
+                    0,
+                  ],
+                },
+                status: {
+                  $switch: {
+                    branches: [
+                      { case: { $gt: [{ $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] }, 100] }, then: 'exceeded' },
+                      { case: { $gt: [{ $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] }, 80] }, then: 'warning' },
+                    ],
+                    default: 'good',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      // Calculate totalExpense and effectiveTotalBudget
+      {
+        $addFields: {
+          totalExpense: { $sum: '$categories.spent' },
+          effectiveTotalBudget: {
+            $cond: [{ $gt: ['$totalBudget', 0] }, '$totalBudget', '$totalCategoryAmount'],
+          },
+        },
+      },
+      // Final projection & formatting
+      {
+        $project: {
+          _id: 0,
+          month: 1,
+          totalBudget: { $toString: { $round: ['$totalBudget', 2] } },
+          totalCategoryAmount: { $toString: { $round: ['$totalCategoryAmount', 2] } },
+          effectiveTotalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
+          totalExpense: { $toString: { $round: ['$totalExpense', 2] } },
+          totalRemaining: {
+            $toString: {
+              $round: [{ $subtract: ['$effectiveTotalBudget', '$totalExpense'] }, 2],
+            },
+          },
+          totalPercentageUsed: {
+            $toString: {
+              $round: [
+                {
+                  $cond: [
+                    { $gt: ['$effectiveTotalBudget', 0] },
+                    { $multiply: [{ $divide: ['$totalExpense', '$effectiveTotalBudget'] }, 100] },
+                    0,
+                  ],
+                },
+                2,
+              ],
+            },
+          },
+          totalPercentageLeft: {
+            $toString: {
+              $round: [
+                {
+                  $cond: [
+                    { $gt: ['$effectiveTotalBudget', 0] },
+                    { $subtract: [100, { $multiply: [{ $divide: ['$totalExpense', '$effectiveTotalBudget'] }, 100] }] },
+                    0,
+                  ],
+                },
+                2,
+              ],
+            },
+          },
+          categories: {
+            $map: {
+              input: '$categories',
+              as: 'cat',
+              in: {
+                categoryId: { $toString: '$$cat.categoryId' },
+                budgetAmount: { $toString: { $round: ['$$cat.budgetAmount', 2] } },
+                spent: { $toString: { $round: ['$$cat.spent', 2] } },
+                remaining: { $toString: { $round: ['$$cat.remaining', 2] } },
+                percentageUsed: { $toString: { $round: ['$$cat.percentageUsed', 2] } },
+                status: '$$cat.status',
+              },
+            },
+          },
+          summary: {
+            totalCategories: { $size: '$categories' },
+            categoriesExceeded: {
+              $size: {
+                $filter: {
+                  input: '$categories',
+                  as: 'cat',
+                  cond: { $eq: ['$$cat.status', 'exceeded'] },
+                },
+              },
+            },
+            categoriesInWarning: {
+              $size: {
+                $filter: {
+                  input: '$categories',
+                  as: 'cat',
+                  cond: { $eq: ['$$cat.status', 'warning'] },
+                },
+              },
+            },
+            categoriesGood: {
+              $size: {
+                $filter: {
+                  input: '$categories',
+                  as: 'cat',
+                  cond: { $eq: ['$$cat.status', 'good'] },
+                },
+              },
+            },
+            budgetType: {
+              $cond: [{ $gt: ['$totalBudget', 0] }, 'monthly_budget_set', 'category_only_budget'],
+            },
+          },
         },
       },
     ]);
 
-    const expenseMap = new Map(
-      expensesAgg.map((exp) => [exp._id, exp.totalExpense])
-    );
-    const totalExpense = expensesAgg.reduce((sum, exp) => sum + exp.totalExpense, 0);
+    if (!budgetResult || budgetResult.length === 0) {
+      return res.status(404).json({ success: false, message: 'Budget not found' });
+    }
 
-    const effectiveTotalBudget = budget.totalBudget ?? budget.totalCategoryAmount;
-    const totalRemaining = (effectiveTotalBudget ?? 0) - totalExpense;
-    const totalPercentageUsed =
-      effectiveTotalBudget && effectiveTotalBudget > 0
-        ? (totalExpense / effectiveTotalBudget) * 100
-        : 0;
-
-    const categories = budget.categories ?? [];
-    const categoryDetails = categories.map((budgetCategory) => {
-      const spent = expenseMap.get(budgetCategory.category) || 0;
-      const remaining = budgetCategory.amount - spent;
-      const percentageUsed =
-        budgetCategory.amount > 0 ? (spent / budgetCategory.amount) * 100 : 0;
-      
-      const percentageOfTotalBudget =
-        effectiveTotalBudget && effectiveTotalBudget > 0
-          ? (budgetCategory.amount / effectiveTotalBudget) * 100
-          : 0;
-
-      return {
-        category: budgetCategory.category,
-        budgetAmount: budgetCategory.amount.toFixed(2),
-        spent: spent.toFixed(2),
-        remaining: remaining.toFixed(2),
-        percentageUsed: percentageUsed.toFixed(2),
-        percentageOfTotalBudget: percentageOfTotalBudget.toFixed(2), // New field added
-        status:
-          percentageUsed >= 100
-            ? 'exceeded'
-            : percentageUsed >= 80
-            ? 'warning'
-            : 'good',
-      };
-    });
-
-    res.status(200).json({
-      success: true,
-      data: {
-        month,
-        totalBudget: budget.totalBudget?.toFixed(2) ?? null,
-        totalCategoryAmount: budget.totalCategoryAmount?.toFixed(2) ?? null,
-        effectiveTotalBudget: effectiveTotalBudget?.toFixed(2) ?? '0.00',
-        totalExpense: totalExpense.toFixed(2),
-        totalRemaining: totalRemaining.toFixed(2),
-        totalPercentageUsed: totalPercentageUsed.toFixed(2),
-        totalPercentageLeft: (100 - totalPercentageUsed).toFixed(2),
-        categories: categoryDetails,
-        summary: {
-          totalCategories: categories.length,
-          categoriesExceeded: categoryDetails.filter(
-            (cat) => cat.status === 'exceeded'
-          ).length,
-          categoriesInWarning: categoryDetails.filter(
-            (cat) => cat.status === 'warning'
-          ).length,
-          categoriesGood: categoryDetails.filter(
-            (cat) => cat.status === 'good'
-          ).length,
-          budgetType: budget.totalBudget ? 'monthly_budget_set' : 'category_budgets_only',
-        },
-      },
-    });
+    return res.json({ success: true, data: budgetResult[0] });
   } catch (error) {
-    console.error('Error getting budget details:', error);
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to get budget details', error });
+    console.error('Error in getBudgetDetails:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };

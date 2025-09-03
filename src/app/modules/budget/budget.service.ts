@@ -10,7 +10,8 @@ import { Budget } from './budget.model';
  * @returns The budget document or null if not found.
  */
 export const getBudgetByUserAndMonth = async (userId: string, month: string) => {
-  return Budget.findOne({ userId, month });
+  const data = await Budget.findOne({ userId, month });
+  return data
 };
 
 /**

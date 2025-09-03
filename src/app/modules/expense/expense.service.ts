@@ -16,8 +16,19 @@ export const createExpense = async (
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
 
+  // Always cast category to ObjectId for consistency
+  let categoryObj = data.category;
+  if (categoryObj && typeof categoryObj === 'string') {
+    categoryObj = new Types.ObjectId(categoryObj);
+  }
+  console.log(
+    'Saving expense with category:',
+    categoryObj,
+    'type:',
+    typeof categoryObj
+  );
   await notifyOnBudgetThreshold(userId.toString(), `${year}-${month}`);
-  return Expense.create({ ...data, userId });
+  return Expense.create({ ...data, userId, category: categoryObj });
 };
 
 export const getExpensesByUser = (userId: Types.ObjectId) => {

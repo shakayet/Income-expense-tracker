@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Income } from '../income/income.model';
 import Expense from '../expense/expense.model';
-// import { Types } from 'mongoose';
 import { Budget } from '../budget/budget.model';
 
 export const getMonthlyReport = async (userId: string, month: string) => {
@@ -42,10 +42,13 @@ export const getMonthlyReport = async (userId: string, month: string) => {
     }))
     .sort((a, b) => b.percentage - a.percentage);
 
-  const budget = budgetDoc?.get('amount') || 0;
+  // Fix: Access totalBudget directly from the document
+  const budget = (budgetDoc as any)?.totalBudget || 0;
   const savings = (totalIncome - totalExpense).toFixed(2);
 
-  const budgetUsedPercentage = ((totalExpense / budget) * 100).toFixed(2);
+  // Avoid division by zero
+  const budgetUsedPercentage =
+    budget > 0 ? ((totalExpense / budget) * 100).toFixed(2) : '0.00';
 
   return {
     month,
@@ -75,7 +78,12 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   const totalIncome = incomeDocs.reduce((acc, item) => acc + item.amount, 0);
   const totalExpense = expenseDocs.reduce((acc, item) => acc + item.amount, 0);
-  const totalBudget = budgets.reduce((acc, b) => acc + (b.get('amount') || 0), 0);
+
+  // Fix: Access amount directly from budget documents
+  const totalBudget = budgets.reduce(
+    (acc, b) => acc + ((b as any).amount || 0),
+    0
+  );
 
   const incomeByCategory: Record<string, number> = {};
   const expenseByCategory: Record<string, number> = {};
@@ -104,7 +112,9 @@ export const getYearlyReport = async (userId: string, year: string) => {
 
   const savings = (totalIncome - totalExpense).toFixed(2);
 
-  const budgetUsedPercentage = ((totalExpense / totalBudget) * 100).toFixed(2);
+  // Avoid division by zero
+  const budgetUsedPercentage =
+    totalBudget > 0 ? ((totalExpense / totalBudget) * 100).toFixed(2) : '0.00';
 
   return {
     year,
