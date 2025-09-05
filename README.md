@@ -1,6 +1,6 @@
 # Income & Expense Tracker Backend
 
-This project is a robust backend for an income and expense tracker, built with TypeScript, Node.js, Express, and Mongoose. It provides a secure, scalable, and feature-rich API for personal finance management, subscription handling, notifications, and more.
+This project is a robust backend for an income and expense tracker, built with TypeScript, Node.js, Express, and Mongoose. It provides a secure, scalable, and feature-rich API for personal finance management, subscription handling, notifications, and more..
 
 ## Features (Detailed)
 
