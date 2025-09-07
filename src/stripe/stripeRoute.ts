@@ -5,6 +5,8 @@ import { createStripeProductCatalog } from './createStripeProductCatalog';
 import { deleteStripeProductCatalog } from './deleteStripeProductCatalog';
 import auth from '../app/middlewares/auth';
 import { USER_ROLES } from '../enums/user';
+// import { rawBodyMiddleware } from '../app/middlewares/rawBody.middleware';
+// import handleStripeWebhook from './handleStripeWebhook';
 
 const router = express.Router();
 
@@ -194,5 +196,7 @@ router.post(
     }
   }
 );
+
+// router.post('/webhook', rawBodyMiddleware, handleStripeWebhook); // Disabled: use only app.ts webhook route
 
 export const stripePayments = router;
