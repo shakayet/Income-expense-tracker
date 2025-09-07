@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { notifyOnBudgetThreshold } from '../budget/budget.service';
 import { IExpense } from './expense.interface';
 import Expense from './expense.model';

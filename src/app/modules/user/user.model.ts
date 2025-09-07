@@ -115,4 +115,12 @@ userSchema.pre('save', async function (next) {
   next();
 });
 
+export const invalidateToken = async (token: string) => {
+  // Remove the token from user record(s) that have it
+  await User.updateMany(
+    { fcmToken: token },
+    { $unset: { fcmToken: "" } } // or set to null
+  );
+};
+
 export const User = model<IUser, UserModal>('User', userSchema);

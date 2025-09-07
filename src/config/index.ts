@@ -1,6 +1,7 @@
-/* eslint-env node */
+/* eslint-disable no-undef */
 import dotenv from 'dotenv';
 import path from 'path';
+
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 export default {
@@ -8,6 +9,8 @@ export default {
   database_url: process.env.DATABASE_URL,
   node_env: process.env.NODE_ENV,
   fcm_server_key: process.env.FCM_SERVER_KEY,
+  // fcm_service_account_path removed, now using FCM_SERVICE_ACCOUNT_BASE64 only
+  firebase_project_id: process.env.FIREBASE_PROJECT_ID,
   port: process.env.PORT ? Number(process.env.PORT) : undefined,
   bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS
     ? Number(process.env.BCRYPT_SALT_ROUNDS)

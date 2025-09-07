@@ -5,10 +5,9 @@ import { Budget } from './budget.model';
 import mongoose from 'mongoose';
 // import Expense from '../expense/expense.model';
 import process from 'process';
-import {
-  // notifyOnBudgetThreshold,
-  // getBudgetByUserAndMonth,
-} from './budget.service';
+import // notifyOnBudgetThreshold,
+// getBudgetByUserAndMonth,
+'./budget.service';
 
 // Set or update a budget with an array of categories
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
@@ -389,8 +388,6 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 
 //     console.log('Expense Map keys:', [...expenseMap.keys()]);
 
-    
-
 //     const effectiveTotalBudget = budget.totalBudget ?? budget.totalCategoryAmount;
 //     const totalRemaining = (effectiveTotalBudget ?? 0) - totalExpense;
 //     const totalPercentageUsed =
@@ -405,8 +402,6 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 //     }));
 
 //     console.log('Budget categories:', categories.map(c => c.categoryId));
-
-
 
 //     const categoryDetails = categories.map(budgetCategory => {
 //       const amount =
@@ -464,14 +459,15 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 //   }
 // };
 
-
 export const getBudgetDetails = async (req: Request, res: Response) => {
   const userId = (req.user as { id?: string } | undefined)?.id;
   try {
     const { month } = req.params;
 
     if (!userId || !month) {
-      return res.status(400).json({ success: false, message: 'userId and month are required' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'userId and month are required' });
     }
 
     const userIdObj = new mongoose.Types.ObjectId(userId);
@@ -480,6 +476,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
       {
         $match: { userId: userIdObj, month },
       },
+      // Expenses lookup
       {
         $lookup: {
           from: 'expenses',
@@ -490,8 +487,18 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 $expr: {
                   $and: [
                     { $eq: ['$userId', userIdObj] },
-                    { $gte: ['$createdAt', new Date(`${month}-01T00:00:00.000Z`)] },
-                    { $lt: ['$createdAt', new Date(`${month}-31T23:59:59.999Z`)] },
+                    {
+                      $gte: [
+                        '$createdAt',
+                        new Date(`${month}-01T00:00:00.000Z`),
+                      ],
+                    },
+                    {
+                      $lt: [
+                        '$createdAt',
+                        new Date(`${month}-31T23:59:59.999Z`),
+                      ],
+                    },
                   ],
                 },
               },
@@ -506,7 +513,40 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           as: 'expensesByCategory',
         },
       },
-      // Map over categories array without unwind
+      // Incomes lookup
+      {
+        $lookup: {
+          from: 'incomes',
+          let: { budgetUserId: '$userId', budgetMonth: '$month' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$userId', userIdObj] },
+                    { $eq: ['$month', month] }, // month field already stored in your incomes
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalIncome: { $sum: '$amount' },
+              },
+            },
+          ],
+          as: 'incomeSummary',
+        },
+      },
+      {
+        $addFields: {
+          totalIncome: {
+            $ifNull: [{ $arrayElemAt: ['$incomeSummary.totalIncome', 0] }, 0],
+          },
+        },
+      },
+      // Categories handling
       {
         $addFields: {
           categories: {
@@ -539,7 +579,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           },
         },
       },
-      // Calculate remaining, percentageUsed, and status for each category
+      // Calculate category fields
       {
         $addFields: {
           categories: {
@@ -554,15 +594,46 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 percentageUsed: {
                   $cond: [
                     { $gt: ['$$cat.amount', 0] },
-                    { $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] },
+                    {
+                      $multiply: [
+                        { $divide: ['$$cat.spent', '$$cat.amount'] },
+                        100,
+                      ],
+                    },
                     0,
                   ],
                 },
                 status: {
                   $switch: {
                     branches: [
-                      { case: { $gt: [{ $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] }, 100] }, then: 'exceeded' },
-                      { case: { $gt: [{ $multiply: [{ $divide: ['$$cat.spent', '$$cat.amount'] }, 100] }, 80] }, then: 'warning' },
+                      {
+                        case: {
+                          $gt: [
+                            {
+                              $multiply: [
+                                { $divide: ['$$cat.spent', '$$cat.amount'] },
+                                100,
+                              ],
+                            },
+                            100,
+                          ],
+                        },
+                        then: 'exceeded',
+                      },
+                      {
+                        case: {
+                          $gt: [
+                            {
+                              $multiply: [
+                                { $divide: ['$$cat.spent', '$$cat.amount'] },
+                                100,
+                              ],
+                            },
+                            80,
+                          ],
+                        },
+                        then: 'warning',
+                      },
                     ],
                     default: 'good',
                   },
@@ -572,27 +643,39 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           },
         },
       },
-      // Calculate totalExpense and effectiveTotalBudget
+      // TotalExpense & effective budget
       {
         $addFields: {
           totalExpense: { $sum: '$categories.spent' },
           effectiveTotalBudget: {
-            $cond: [{ $gt: ['$totalBudget', 0] }, '$totalBudget', '$totalCategoryAmount'],
+            $cond: [
+              { $gt: ['$totalBudget', 0] },
+              '$totalBudget',
+              '$totalCategoryAmount',
+            ],
           },
         },
       },
-      // Final projection & formatting
+      // Projection
       {
         $project: {
           _id: 0,
           month: 1,
+          totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
           totalBudget: { $toString: { $round: ['$totalBudget', 2] } },
-          totalCategoryAmount: { $toString: { $round: ['$totalCategoryAmount', 2] } },
-          effectiveTotalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
+          totalCategoryAmount: {
+            $toString: { $round: ['$totalCategoryAmount', 2] },
+          },
+          effectiveTotalBudget: {
+            $toString: { $round: ['$effectiveTotalBudget', 2] },
+          },
           totalExpense: { $toString: { $round: ['$totalExpense', 2] } },
           totalRemaining: {
             $toString: {
-              $round: [{ $subtract: ['$effectiveTotalBudget', '$totalExpense'] }, 2],
+              $round: [
+                { $subtract: ['$effectiveTotalBudget', '$totalExpense'] },
+                2,
+              ],
             },
           },
           totalPercentageUsed: {
@@ -601,7 +684,12 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 {
                   $cond: [
                     { $gt: ['$effectiveTotalBudget', 0] },
-                    { $multiply: [{ $divide: ['$totalExpense', '$effectiveTotalBudget'] }, 100] },
+                    {
+                      $multiply: [
+                        { $divide: ['$totalExpense', '$effectiveTotalBudget'] },
+                        100,
+                      ],
+                    },
                     0,
                   ],
                 },
@@ -615,7 +703,22 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 {
                   $cond: [
                     { $gt: ['$effectiveTotalBudget', 0] },
-                    { $subtract: [100, { $multiply: [{ $divide: ['$totalExpense', '$effectiveTotalBudget'] }, 100] }] },
+                    {
+                      $subtract: [
+                        100,
+                        {
+                          $multiply: [
+                            {
+                              $divide: [
+                                '$totalExpense',
+                                '$effectiveTotalBudget',
+                              ],
+                            },
+                            100,
+                          ],
+                        },
+                      ],
+                    },
                     0,
                   ],
                 },
@@ -629,10 +732,14 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               as: 'cat',
               in: {
                 categoryId: { $toString: '$$cat.categoryId' },
-                budgetAmount: { $toString: { $round: ['$$cat.budgetAmount', 2] } },
+                budgetAmount: {
+                  $toString: { $round: ['$$cat.budgetAmount', 2] },
+                },
                 spent: { $toString: { $round: ['$$cat.spent', 2] } },
                 remaining: { $toString: { $round: ['$$cat.remaining', 2] } },
-                percentageUsed: { $toString: { $round: ['$$cat.percentageUsed', 2] } },
+                percentageUsed: {
+                  $toString: { $round: ['$$cat.percentageUsed', 2] },
+                },
                 status: '$$cat.status',
               },
             },
@@ -667,7 +774,11 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               },
             },
             budgetType: {
-              $cond: [{ $gt: ['$totalBudget', 0] }, 'monthly_budget_set', 'category_only_budget'],
+              $cond: [
+                { $gt: ['$totalBudget', 0] },
+                'monthly_budget_set',
+                'category_only_budget',
+              ],
             },
           },
         },
@@ -675,7 +786,9 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     ]);
 
     if (!budgetResult || budgetResult.length === 0) {
-      return res.status(404).json({ success: false, message: 'Budget not found' });
+      return res
+        .status(404)
+        .json({ success: false, message: 'Budget not found' });
     }
 
     return res.json({ success: true, data: budgetResult[0] });

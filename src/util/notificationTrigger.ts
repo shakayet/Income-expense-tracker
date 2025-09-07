@@ -1,3 +1,4 @@
+import { INotification } from '../app/modules/notification/notification.interface';
 import { createNotification } from '../app/modules/notification/notification.service';
 import {
   getMonthlyReport,
@@ -5,29 +6,20 @@ import {
 } from '../app/modules/reports/report.service';
 import { getAllUsersFromDB } from '../app/modules/user/user.service';
 
-import { INotification } from '../app/modules/notification/notification.interface';
-
-type ReportType = { totalIncome?: number; totalExpense?: number };
-
-export const sendMonthlyAndYearlyNotifications = async (): Promise<void> => {
+export const sendMonthlyNotifications = async (): Promise<void> => {
   const users = await getAllUsersFromDB();
+
+  const date = new Date();
+  const currentYear = String(date.getFullYear());
+  const prevMonth = String(
+    date.getMonth() === 0 ? 12 : date.getMonth()
+  ).padStart(2, '0');
+  const selectDate = currentYear + '-' + prevMonth;
 
   for (const user of users) {
     if (!user || !user.id) continue;
-    const date = new Date();
-    const currentYear = String(date.getFullYear());
-    const prevMonth = String(
-      date.getMonth() === 0 ? 12 : date.getMonth()
-    ).padStart(2, '0');
-    const prevYear =
-      date.getMonth() === 0 ? (date.getFullYear() - 1).toString() : currentYear;
-    const selectDate = currentYear + '-' + prevMonth;
 
-    // Monthly report
-    const monthlyReport: ReportType = await getMonthlyReport(
-      user.id,
-      selectDate
-    );
+    const monthlyReport = await getMonthlyReport(user.id, selectDate);
 
     const monthlyData: Partial<INotification> & {
       title: string;
@@ -46,11 +38,24 @@ export const sendMonthlyAndYearlyNotifications = async (): Promise<void> => {
     ) {
       await createNotification(monthlyData, user.id);
     }
+  }
+};
 
-    // Yearly report
-    const yearlyReport: ReportType = await getYearlyReport(user.id, prevYear);
+export const sendYearlyNotifications = async (): Promise<void> => {
+  const users = await getAllUsersFromDB();
 
-    const yarlyData: Partial<INotification> & {
+  const date = new Date();
+  // const currentYear = String(date.getFullYear());
+  const prevYear = (
+    date.getMonth() === 0 ? date.getFullYear() - 1 : date.getFullYear()
+  ).toString();
+
+  for (const user of users) {
+    if (!user || !user.id) continue;
+
+    const yearlyReport = await getYearlyReport(user.id, prevYear);
+
+    const yearlyData: Partial<INotification> & {
       title: string;
       message: string;
     } = {
@@ -64,7 +69,7 @@ export const sendMonthlyAndYearlyNotifications = async (): Promise<void> => {
       (yearlyReport?.totalIncome ?? -1) >= 0 ||
       (yearlyReport?.totalExpense ?? -1) >= 0
     ) {
-      await createNotification(yarlyData, user.id);
+      await createNotification(yearlyData, user.id);
     }
   }
 };

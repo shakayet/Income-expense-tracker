@@ -6,7 +6,7 @@ import { IncomeRoutes } from '../app/modules/income/income.route';
 import { BudgetRoutes } from '../app/modules/budget/budget.route';
 import { ReportRoutes } from '../app/modules/reports/report.route';
 // import path from 'path';
-import { NotificationRoutes } from '../app/modules/notification/notification.route';
+// import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { PlanRoutes } from '../app/modules/plan/plan.routes';
 import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
 import { CategoryRoutes } from '../app/modules/category/category.route';
@@ -43,10 +43,10 @@ const apiRoutes = [
     path: '/reports',
     route: ReportRoutes,
   },
-  {
-    path: '/notifications',
-    route: NotificationRoutes,
-  },
+  // {
+  //   path: '/notifications',
+  //   route: NotificationRoutes,
+  // },
   { path: '/plan', route: PlanRoutes },
   { path: '/subscription', route: SubscriptionRoutes },
   {

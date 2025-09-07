@@ -22,18 +22,18 @@ export const markAsRead = async (req: Request, res: Response) => {
 
 // only for creating notifications (temporary)
 
-export const postNotifications = async (req: Request, res: Response) => {
-  if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  const userId = req.user.id;
-  const payLoad = req.body;
-  const notifications = await NotificationService.createNotification(
-    payLoad,
-    userId
-  );
-  res.json({ success: true, data: notifications });
-};
+// export const postNotifications = async (req: Request, res: Response) => {
+//   if (!req.user || !req.user.id) {
+//     return res.status(401).json({ message: 'Unauthorized' });
+//   }
+//   const userId = req.user.id;
+//   // const payLoad = req.body;
+
+//   const notifications = await NotificationService.createNotification(
+//     userId
+//   );
+//   res.json({ success: true, data: notifications });
+// };
 
 export const getSingleNotification = async (req: Request, res: Response) => {
   const { id } = req.params;
