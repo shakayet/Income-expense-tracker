@@ -12,7 +12,9 @@ type SubscriptionPayload = {
   customerId: string;
   price: number;
   user: Types.ObjectId;
+  userEmail: string;
   plan: Types.ObjectId;
+  planTitle: string;
   trxId: string;
   subscriptionId: string;
   status: string;
@@ -76,7 +78,9 @@ export const handleSubscriptionCreated = async (data: Stripe.Subscription) => {
       customerId: customer.id,
       price: amountPaid,
       user: user._id,
+      userEmail: user.email,
       plan: plan._id,
+      planTitle: plan.title,
       trxId,
       subscriptionId: subscription.id,
       status: 'active',

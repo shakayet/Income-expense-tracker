@@ -21,6 +21,14 @@ const subscriptionSchema = new Schema<ISubscription, SubscriptionModel>(
       ref: 'Plan',
       required: true,
     },
+    userEmail: {
+      type: String,
+      required: true,
+    },
+    planTitle: {
+      type: String,
+      required: true,
+    },
     trxId: {
       type: String,
       required: true,
