@@ -16,6 +16,7 @@ export type IUser = {
   verified: boolean;
   fcmToken?: { type: string } | null;
   userType?: 'pro' | 'free';
+  accountStatus?: 'active' | 'ban';
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;

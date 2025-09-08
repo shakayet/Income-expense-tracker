@@ -1,3 +1,4 @@
+// ...existing code...
 import bcrypt from 'bcryptjs';
 import { StatusCodes } from 'http-status-codes';
 import { model, Schema } from 'mongoose';
@@ -48,8 +49,8 @@ const userSchema = new Schema<IUser, UserModal>(
       enum: ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'],
       default: 'USD',
     },
-    fcmToken: { 
-      type: String
+    fcmToken: {
+      type: String,
     },
     pin: {
       type: String,
@@ -63,6 +64,11 @@ const userSchema = new Schema<IUser, UserModal>(
       type: String,
       enum: ['pro', 'free'],
       default: 'free',
+    },
+    accountStatus: {
+      type: String,
+      enum: ['active', 'ban'],
+      default: 'active',
     },
     authentication: {
       type: {
@@ -124,7 +130,7 @@ export const invalidateToken = async (token: string) => {
   // Remove the token from user record(s) that have it
   await User.updateMany(
     { fcmToken: token },
-    { $unset: { fcmToken: "" } } // or set to null
+    { $unset: { fcmToken: '' } } // or set to null
   );
 };
 

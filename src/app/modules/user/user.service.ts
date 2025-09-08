@@ -37,6 +37,10 @@ const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   if (!payload.userType) {
     payload.userType = 'free';
   }
+  // set default accountStatus if not provided
+  if (!payload.accountStatus) {
+    payload.accountStatus = 'active';
+  }
   const createUser = await User.create(payload);
   if (!createUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
@@ -95,6 +99,10 @@ const updateProfileToDB = async (
   // If userType is not provided, keep existing value
   if (!payload.userType) {
     payload.userType = isExistUser.userType || 'free';
+  }
+  // If accountStatus is not provided, keep existing value
+  if (!payload.accountStatus) {
+    payload.accountStatus = isExistUser.accountStatus || 'active';
   }
 
   const updateDoc = await User.findOneAndUpdate({ _id: id }, payload, {

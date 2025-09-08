@@ -9,8 +9,9 @@ const createUserZodSchema = z.object({
     preferredLanguage: z.string({ required_error: 'Location is required' }),
     profile: z.string().optional(),
     currency: z.string().optional(),
-  pin: z.string().optional(),
-  userType: z.enum(['pro', 'free']).optional(),
+    pin: z.string().optional(),
+    userType: z.enum(['pro', 'free']).optional(),
+    accountStatus: z.enum(['active', 'ban']).optional(),
   }),
 });
 
@@ -24,6 +25,7 @@ const updateUserZodSchema = z.object({
   currency: z.string().optional(),
   pin: z.string().optional(),
   userType: z.enum(['pro', 'free']).optional(),
+  accountStatus: z.enum(['active', 'ban']).optional(),
 });
 
 export const UserValidation = {
