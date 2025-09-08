@@ -15,6 +15,7 @@ export type IUser = {
   pin?: string;
   verified: boolean;
   fcmToken?: { type: string } | null;
+  userType?: 'pro' | 'free';
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;

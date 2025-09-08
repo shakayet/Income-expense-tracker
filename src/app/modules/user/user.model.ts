@@ -59,6 +59,11 @@ const userSchema = new Schema<IUser, UserModal>(
       type: Boolean,
       default: false,
     },
+    userType: {
+      type: String,
+      enum: ['pro', 'free'],
+      default: 'free',
+    },
     authentication: {
       type: {
         isResetPassword: {

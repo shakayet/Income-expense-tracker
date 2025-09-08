@@ -14,7 +14,10 @@ import bcrypt from 'bcrypt';
 const createUserToDB = async (payload: Partial<IUser>): Promise<IUser> => {
   //set role
   payload.role = USER_ROLES.USER;
-  
+  // set default userType if not provided
+  if (!payload.userType) {
+    payload.userType = 'free';
+  }
   const createUser = await User.create(payload);
   if (!createUser) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Failed to create user');
@@ -68,6 +71,11 @@ const updateProfileToDB = async (
   //unlink file here
   if (payload.image && isExistUser.image) {
     unlinkFile(isExistUser.image);
+  }
+
+  // If userType is not provided, keep existing value
+  if (!payload.userType) {
+    payload.userType = isExistUser.userType || 'free';
   }
 
   const updateDoc = await User.findOneAndUpdate({ _id: id }, payload, {

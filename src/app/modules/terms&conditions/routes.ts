@@ -1,5 +1,5 @@
 import express from 'express';
-import { TermsController } from './controller';
+import * as TermsController from './controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
 
@@ -14,11 +14,15 @@ router
   .get(TermsController.getAllTerms); // Get all versions
 
 router
-  .route("/:id")
+  .route('/:id')
   .patch(
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-    TermsController.updateTerms 
-);
+    TermsController.updateTerms
+  )
+  .delete(
+    auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+    TermsController.deleteTerms
+  );
 
 router.route('/latest').get(TermsController.getLatestTerms);
 
