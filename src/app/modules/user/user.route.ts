@@ -6,6 +6,8 @@ import validateRequest from '../../middlewares/validateRequest';
 import { UserController } from './user.controller';
 import { UserValidation } from './user.validation';
 const router = express.Router();
+// Route for admin/super admin to get user list (userId, name, email, userType)
+
 router.patch(
   '/set-pin',
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
@@ -53,6 +55,11 @@ router.post(
   '/verify-pin',
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
   UserController.verifyPin
+);
+router.get(
+  '/admin/user-list',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  UserController.getUserListForAdmin
 );
 
 export const UserRoutes = router;

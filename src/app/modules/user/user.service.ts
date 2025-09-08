@@ -1,3 +1,14 @@
+// Get all users with only userId, name, email, and userType (for admin/super admin)
+const getUserListForAdmin = async () => {
+  const users = await User.find({}, { _id: 1, name: 1, email: 1, userType: 1 });
+  // Rename _id to userId in the response
+  return users.map(u => ({
+    userId: u._id,
+    name: u.name,
+    email: u.email,
+    userType: u.userType || 'free',
+  }));
+};
 import { StatusCodes } from 'http-status-codes';
 import { JwtPayload } from 'jsonwebtoken';
 import { USER_ROLES } from '../../../enums/user';
@@ -120,11 +131,7 @@ const updatePin = async (userId: string, oldPin: string, newPin: string) => {
   const hashedNewPin = await bcrypt.hash(newPin, 10);
   user.pin = hashedNewPin;
   // await user.save();
-  await User.findByIdAndUpdate(
-    userId,
-    { pin: hashedNewPin },
-    { new: true }
-  );
+  await User.findByIdAndUpdate(userId, { pin: hashedNewPin }, { new: true });
   return { message: 'PIN updated successfully' };
 };
 
@@ -144,4 +151,5 @@ export const UserService = {
   setPin,
   updatePin,
   verifyPin,
+  getUserListForAdmin,
 };
