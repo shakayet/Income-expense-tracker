@@ -7,7 +7,6 @@ import { UserController } from './user.controller';
 import { UserValidation } from './user.validation';
 const router = express.Router();
 
-
 router.patch(
   '/set-pin',
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.USER, USER_ROLES.ADMIN),
@@ -66,5 +65,9 @@ router.get(
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
   UserController.getUserProfileById
 );
-
+router.patch(
+  '/admin/user/:userId',
+  auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  UserController.updateUserById
+);
 export const UserRoutes = router;

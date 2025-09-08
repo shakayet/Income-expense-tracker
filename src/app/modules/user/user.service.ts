@@ -1,3 +1,16 @@
+// Update user by objectId (for admin/super_admin)
+const updateUserById = async (userId: string, payload: Partial<IUser>) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  // If userType or accountStatus not provided, keep existing
+  if (!payload.userType) payload.userType = user.userType || 'free';
+  if (!payload.accountStatus)
+    payload.accountStatus = user.accountStatus || 'active';
+  const updated = await User.findByIdAndUpdate(userId, payload, { new: true });
+  return updated;
+};
 // Get user profile by user ObjectId (for admin/super admin)
 const getUserProfileById = async (userId: string) => {
   const user = await User.findById(userId).select('-password -pin');
@@ -169,4 +182,5 @@ export const UserService = {
   verifyPin,
   getUserListForAdmin,
   getUserProfileById,
+  updateUserById,
 };

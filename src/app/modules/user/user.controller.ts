@@ -6,6 +6,18 @@ import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
 import { User } from './user.model';
 
+// Update user by objectId (for admin/super_admin)
+const updateUserById = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const result = await UserService.updateUserById(userId, req.body);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: 'User updated successfully',
+    data: result,
+  });
+});
+
 // Get user profile by user ObjectId (for admin/super admin)
 const getUserProfileById = catchAsync(async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -192,4 +204,5 @@ export const UserController = {
   verifyPin,
   getUserListForAdmin,
   getUserProfileById,
+  updateUserById,
 };
