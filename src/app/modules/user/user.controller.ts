@@ -6,6 +6,18 @@ import sendResponse from '../../../shared/sendResponse';
 import { UserService } from './user.service';
 import { User } from './user.model';
 
+// Get user profile by user ObjectId (for admin/super admin)
+const getUserProfileById = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.params;
+  const result = await UserService.getUserProfileById(userId);
+  sendResponse(res, {
+    success: true,
+    statusCode: 200,
+    message: 'User profile fetched successfully',
+    data: result,
+  });
+});
+
 // Get user list for admin/super admin (userId, name, email, userType)
 const getUserListForAdmin = catchAsync(async (req, res) => {
   const result = await UserService.getUserListForAdmin();
@@ -179,4 +191,5 @@ export const UserController = {
   updatePin,
   verifyPin,
   getUserListForAdmin,
+  getUserProfileById,
 };

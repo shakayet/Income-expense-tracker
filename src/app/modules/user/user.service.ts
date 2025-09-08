@@ -1,3 +1,11 @@
+// Get user profile by user ObjectId (for admin/super admin)
+const getUserProfileById = async (userId: string) => {
+  const user = await User.findById(userId).select('-password -pin');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+  return user;
+};
 // Get all users with only userId, name, email, and userType (for admin/super admin)
 const getUserListForAdmin = async () => {
   const users = await User.find({}, { _id: 1, name: 1, email: 1, userType: 1 });
@@ -152,4 +160,5 @@ export const UserService = {
   updatePin,
   verifyPin,
   getUserListForAdmin,
+  getUserProfileById,
 };
