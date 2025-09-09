@@ -1,3 +1,4 @@
+// Get only monthly budget and month for a user
 import { createNotification } from '../notification/notification.service';
 import { getMonthlyReport } from '../reports/report.service';
 import { hasReachedThreshold } from '../../../util/notificationThresholdTracker';
@@ -9,9 +10,18 @@ import { Budget } from './budget.model';
  * @param month - The month in 'YYYY-MM' format.
  * @returns The budget document or null if not found.
  */
-export const getBudgetByUserAndMonth = async (userId: string, month: string) => {
+export const getBudgetByUserAndMonth = async (
+  userId: string,
+  month: string
+) => {
   const data = await Budget.findOne({ userId, month });
-  return data
+  return data;
+};
+
+export const getUserMonthlyBudget = async (userId: string) => {
+  // Assuming 'userId' field in budget model refers to userId
+  // and 'month' and 'totalBudget' fields exist in the model
+  return Budget.find({ userId }, { month: 1, totalBudget: 1, _id: 0 });
 };
 
 /**
@@ -21,7 +31,10 @@ export const getBudgetByUserAndMonth = async (userId: string, month: string) => 
  * @param userId - The user's ID.
  * @param month - The month in 'YYYY-MM' format.
  */
-export const notifyOnBudgetThreshold = async (userId: string, month: string) => {
+export const notifyOnBudgetThreshold = async (
+  userId: string,
+  month: string
+) => {
   const budget = await getBudgetByUserAndMonth(userId, month);
   if (!budget) return;
 
@@ -29,19 +42,27 @@ export const notifyOnBudgetThreshold = async (userId: string, month: string) => 
   const expense = report.totalExpense ?? 0;
 
   // Use totalBudget if set, otherwise use totalCategoryAmount
-  const effectiveBudgetAmount = budget.totalBudget ?? budget.totalCategoryAmount;
+  const effectiveBudgetAmount =
+    budget.totalBudget ?? budget.totalCategoryAmount;
   if (effectiveBudgetAmount === undefined || effectiveBudgetAmount <= 0) return;
 
   const usedPercent = (expense / effectiveBudgetAmount) * 100;
   const thresholds = [50, 75, 90, 100];
 
   for (const threshold of thresholds) {
-    if (usedPercent >= threshold && !hasReachedThreshold(userId, month, threshold)) {
+    if (
+      usedPercent >= threshold &&
+      !hasReachedThreshold(userId, month, threshold)
+    ) {
       await createNotification(
         {
           type: 'budget-warning',
-          title: `You've used ${threshold}% of your ${budget.totalBudget ? 'monthly' : 'category'} budget!`,
-          message: `You've spent ${threshold}% of your ${budget.totalBudget ? 'monthly' : 'category'} budget for ${month}`,
+          title: `You've used ${threshold}% of your ${
+            budget.totalBudget ? 'monthly' : 'category'
+          } budget!`,
+          message: `You've spent ${threshold}% of your ${
+            budget.totalBudget ? 'monthly' : 'category'
+          } budget for ${month}`,
           reportMonth: month.split('-')[1],
           reportYear: month.split('-')[0],
           budgetAmount: effectiveBudgetAmount,
@@ -57,7 +78,9 @@ export const notifyOnBudgetThreshold = async (userId: string, month: string) => 
       {
         type: 'budget-warning',
         title: `Budget Exceeded!`,
-        message: `You've exceeded your ${budget.totalBudget ? 'monthly' : 'category'} budget for ${month}`,
+        message: `You've exceeded your ${
+          budget.totalBudget ? 'monthly' : 'category'
+        } budget for ${month}`,
         reportMonth: month.split('-')[1],
         reportYear: month.split('-')[0],
         budgetAmount: effectiveBudgetAmount,

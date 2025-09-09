@@ -7,6 +7,7 @@ import {
   deleteBudgetCategory,
   setMonthlyBudget,
   updateMonthlyBudget,
+  getMonthlyBudgetAndMonth,
 } from './budget.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import {
@@ -23,9 +24,12 @@ const router = express.Router();
 
 router.use(auth(USER_ROLES.USER));
 
-router
-  .route('/monthly')
-  .post(setMonthlyBudget);
+// Route to get only monthly budget and month for a user
+router.get('/monthly-budget', getMonthlyBudgetAndMonth);
+
+router.use(auth(USER_ROLES.USER));
+
+router.route('/monthly').post(setMonthlyBudget);
 
 router
   .route('/monthly/:month')

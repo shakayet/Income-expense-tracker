@@ -1,3 +1,11 @@
+// Update review status to resolved (admin only)
+export const resolveReview = async (reviewId: string) => {
+  const review = await Review.findById(reviewId);
+  if (!review) throw new Error('Review not found');
+  review.status = 'resolved';
+  await review.save();
+  return review;
+};
 import { Review } from './review.model';
 import { IReview } from './review.interface';
 

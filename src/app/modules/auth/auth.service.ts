@@ -25,6 +25,17 @@ const loginUserFromDB = async (payload: ILoginData) => {
     throw new ApiError(StatusCodes.BAD_REQUEST, "User doesn't exist!");
   }
 
+  //check accountStatus
+  if (isExistUser.accountStatus === 'ban') {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      'Your account has been banned. Please contact support.'
+    );
+  }
+  if (isExistUser.accountStatus && isExistUser.accountStatus !== 'active') {
+    throw new ApiError(StatusCodes.FORBIDDEN, 'Your account is not active.');
+  }
+
   //check verified and status
   if (!isExistUser.verified) {
     throw new ApiError(
@@ -32,7 +43,6 @@ const loginUserFromDB = async (payload: ILoginData) => {
       'Please verify your account, then try to login again'
     );
   }
-
 
   //check match password
   if (
@@ -115,7 +125,6 @@ const resendOtpToDB = async (email: string) => {
 
   return { message: 'OTP resent successfully, please check your email' };
 };
-
 
 //verify email
 const verifyEmailToDB = async (payload: IVerifyEmail) => {

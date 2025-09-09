@@ -9,6 +9,42 @@ import // notifyOnBudgetThreshold,
 // getBudgetByUserAndMonth,
 './budget.service';
 
+// Get only monthly budget and month for a user
+export const getMonthlyBudgetAndMonth = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const { month } = req.query;
+    if (!month || typeof month !== 'string') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Month query parameter is required' });
+    }
+    const budget = await Budget.findOne(
+      { userId, month },
+      { month: 1, totalBudget: 1, _id: 0 }
+    );
+    if (!budget) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'No budget found for this month' });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Monthly budget and month fetched successfully',
+      data: budget,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch monthly budget',
+      error,
+    });
+  }
+};
+
 // Set or update a budget with an array of categories
 export const setOrUpdateBudget = async (req: Request, res: Response) => {
   try {
