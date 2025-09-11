@@ -70,7 +70,7 @@ const apiRoutes = [
     route: recentTransaction,
   },
   {
-    path: '/payments',
+    path: '/stripe',
     route: stripePayments,
   },
 ];
