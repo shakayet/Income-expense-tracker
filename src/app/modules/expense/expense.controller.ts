@@ -22,7 +22,6 @@ export const createExpense = async (req: Request, res: Response) => {
     // Check if category exists and is accessible by the user
     const category = await Category.findOne({ _id: catObj });
 
-    
     if (
       !category ||
       (category.userId && category.userId.toString() !== userId.toString())
@@ -49,7 +48,10 @@ export const getExpenses = async (req: Request, res: Response) => {
   }
   const userId = new Types.ObjectId(req.user.id);
   const expenses = await expenseService.getExpensesByUser(userId);
-  res.json(expenses);
+  res.status(200).json({
+    success: true,
+    data: expenses,
+  });
 };
 
 export const updateExpense = async (req: Request, res: Response) => {
@@ -101,7 +103,7 @@ export const deleteExpense = async (req: Request, res: Response) => {
 
 export const getExpense = async (req: Request, res: Response) => {
   const { id } = req.params;
-  
+
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Unauthorized' });
   }

@@ -96,6 +96,10 @@ const apiRoutes = [
     path: '/stripe',
     route: stripePayments,
   },
+  {
+    path: '/in-app-purchase',
+    route: InAppPurchaseRoutes,
+  }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
