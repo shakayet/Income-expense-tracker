@@ -1,3 +1,5 @@
+// /* eslint-disable no-unused-vars */
+// /* eslint-disable @typescript-eslint/no-unused-vars */
 // // inAppPurchase.interface.ts
 // import { Types } from 'mongoose';
 
@@ -5,7 +7,7 @@
 //   IOS = 'ios',
 //   ANDROID = 'android',
 //   STRIPE = 'stripe',
-//   PAYPAL = 'paypal'
+//   PAYPAL = 'paypal',
 // }
 
 // export enum SubscriptionStatus {
@@ -13,7 +15,7 @@
 //   EXPIRED = 'expired',
 //   CANCELLED = 'cancelled',
 //   IN_TRIAL = 'in_trial',
-//   PAST_DUE = 'past_due'
+//   PAST_DUE = 'past_due',
 // }
 
 // export type ISubscriptionPlan = {

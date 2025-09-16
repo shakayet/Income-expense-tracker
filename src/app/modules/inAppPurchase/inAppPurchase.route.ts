@@ -1,11 +1,20 @@
-// // inAppPurchase.route.ts
-import express from 'express';
+// import express from 'express';
 // import * as InAppPurchaseController from './inAppPurchase.controller';
 // import auth from '../../middlewares/auth';
 // import { USER_ROLES } from '../../../enums/user';
+// import { rawBodyMiddleware } from '../../middlewares/rawBody.middleware';
 
-const router = express.Router();
+// const router = express.Router();
 
+// // Native in-app purchase validation endpoints
+// router.post(
+//   '/iap/validate/apple',
+//   InAppPurchaseController.validateAppleReceipt
+// );
+// router.post(
+//   '/iap/validate/google',
+//   InAppPurchaseController.validateGoogleToken
+// );
 // // SubscriptionPlan CRUD
 // router.post(
 //   '/plans',
@@ -24,7 +33,6 @@ const router = express.Router();
 //   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
 //   InAppPurchaseController.deleteSubscriptionPlan
 // );
-
 // // InAppSubscription CRUD
 // router.post(
 //   '/subscriptions',
@@ -51,7 +59,6 @@ const router = express.Router();
 //   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
 //   InAppPurchaseController.deleteInAppSubscription
 // );
-
 // // Webhook endpoints for payment providers
 // router.post(
 //   '/webhook/stripe',
@@ -60,8 +67,8 @@ const router = express.Router();
 // );
 // router.post(
 //   '/webhook/paypal',
-//   express.json({ verify: (req, res, buf) => { req.rawBody = buf; } }),
+//   rawBodyMiddleware,
 //   InAppPurchaseController.handlePaymentWebhook
 // );
 
-export const InAppPurchaseRoutes = router;
+// export const InAppPurchaseRoutes = router;

@@ -1,140 +1,100 @@
-// // inAppPurchase.controller.ts
+// export const getSubscriptionPlanById = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
 // import { Request, Response } from 'express';
+// // --- STUBS for missing controller functions ---
+// // These stubs allow the app to compile and return 501 Not Implemented for missing endpoints.
+// export const createSubscriptionPlan = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const updateSubscriptionPlan = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const deleteSubscriptionPlan = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const createInAppSubscription = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const getAllInAppSubscriptions = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const getInAppSubscriptionById = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const updateInAppSubscription = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
+// export const deleteInAppSubscription = async (req: Request, res: Response) =>
+//   res.status(501).json({ message: 'Not implemented' });
 // import * as InAppPurchaseService from './inAppPurchase.service';
+// import catchAsync from '../../../shared/catchAsync';
+// // TODO: Restore this import when the file exists
+// // import ApiError from '../../errors/ApiError';
 
-// // SubscriptionPlan CRUD
-// export const createSubscriptionPlan = catchAsync(
-//   async (req: UserRequest, res: Response) => {
-//     const { error } = validateSubscriptionPlan(req.body);
-//     if (error) throw new AppError(error.details[0].message, 400);
-
-//     const plan = await InAppPurchaseService.createSubscriptionPlan({
-//       ...req.body,
-//       createdBy: req.user._id,
-//     });
-//     res.status(201).json({ success: true, data: plan });
-//   }
-// );
-
-// export const getAllSubscriptionPlans = catchAsync(
-//   async (_req: Request, res: Response) => {
+// // Get all subscription plans
+// export const getAllSubscriptionPlans = async (req: Request, res: Response) => {
+//   try {
 //     const plans = await InAppPurchaseService.getAllSubscriptionPlans();
-//     res.json({ success: true, data: plans });
-//   }
-// );
-
-// export const getSubscriptionPlanById = catchAsync(
-//   async (req: Request, res: Response) => {
-//     const plan = await InAppPurchaseService.getSubscriptionPlanById(
-//       req.params.id
-//     );
-//     if (!plan) throw new AppError('Subscription plan not found', 404);
-//     res.json({ success: true, data: plan });
-//   }
-// );
-
-// export const updateSubscriptionPlan = catchAsync(
-//   async (req: UserRequest, res: Response) => {
-//     const { error } = validateSubscriptionPlan(req.body);
-//     if (error) throw new AppError(error.details[0].message, 400);
-
-//     const plan = await InAppPurchaseService.updateSubscriptionPlan(
-//       req.params.id,
-//       { ...req.body, updatedBy: req.user._id }
-//     );
-//     if (!plan) throw new AppError('Subscription plan not found', 404);
-//     res.json({ success: true, data: plan });
-//   }
-// );
-
-// export const deleteSubscriptionPlan = catchAsync(
-//   async (req: Request, res: Response) => {
-//     const plan = await InAppPurchaseService.deleteSubscriptionPlan(
-//       req.params.id
-//     );
-//     if (!plan) throw new AppError('Subscription plan not found', 404);
-//     res.json({
-//       success: true,
-//       message: 'Subscription plan deleted successfully',
+//     return res.status(200).json({ success: true, plans });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch plans',
+//       error: error instanceof Error ? error.message : error,
 //     });
 //   }
-// );
+// };
 
-// // InAppSubscription CRUD
-// export const createInAppSubscription = catchAsync(
-//   async (req: UserRequest, res: Response) => {
-//     const { error } = validateInAppSubscription(req.body);
-//     if (error) throw new AppError(error.details[0].message, 400);
-
-//     const sub = await InAppPurchaseService.createInAppSubscription({
-//       ...req.body,
-//       user: req.user._id,
-//       createdBy: req.user._id,
+// // Validate Apple in-app purchase receipt
+// export const validateAppleReceipt = async (req: Request, res: Response) => {
+//   try {
+//     const { receipt, userId, planId } = req.body;
+//     if (!receipt || !userId || !planId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: 'Missing required fields' });
+//     }
+//     const result = await InAppPurchaseService.verifyAppStorePurchase(
+//       receipt,
+//       userId,
+//       planId
+//     );
+//     if (result.success) {
+//       return res
+//         .status(200)
+//         .json({ success: true, subscription: result.subscription });
+//     } else {
+//       return res.status(400).json({ success: false, message: result.error });
+//     }
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error instanceof Error ? error.message : 'Internal server error',
 //     });
-//     res.status(201).json({ success: true, data: sub });
 //   }
-// );
+// };
 
-// export const getAllInAppSubscriptions = catchAsync(
-//   async (req: Request, res: Response) => {
-//     const subs = await InAppPurchaseService.getAllInAppSubscriptions();
-//     res.json({ success: true, data: subs });
-//   }
-// );
-
-// export const getInAppSubscriptionById = catchAsync(
-//   async (req: UserRequest, res: Response) => {
-//     const sub = await InAppPurchaseService.getInAppSubscriptionById(
-//       req.params.id
-//     );
-//     if (!sub) throw new AppError('Subscription not found', 404);
-
-//     // Check if user owns the subscription or is admin
-//     if (
-//       req.user.role === 'user' &&
-//       sub.user.toString() !== req.user._id.toString()
-//     ) {
-//       throw new AppError('Access denied', 403);
+// // Validate Google Play in-app purchase token
+// export const validateGoogleToken = async (req: Request, res: Response) => {
+//   try {
+//     const { purchaseToken, userId, planId } = req.body;
+//     if (!purchaseToken || !userId || !planId) {
+//       return res
+//         .status(400)
+//         .json({ success: false, message: 'Missing required fields' });
 //     }
-
-//     res.json({ success: true, data: sub });
-//   }
-// );
-
-// export const updateInAppSubscription = catchAsync(
-//   async (req: UserRequest, res: Response) => {
-//     const { error } = validateInAppSubscription(req.body, true);
-//     if (error) throw new AppError(error.details[0].message, 400);
-
-//     // Check ownership if user is not admin
-//     if (req.user.role === 'user') {
-//       const existingSub = await InAppPurchaseService.getInAppSubscriptionById(
-//         req.params.id
-//       );
-//       if (!existingSub) throw new AppError('Subscription not found', 404);
-//       if (existingSub.user.toString() !== req.user._id.toString()) {
-//         throw new AppError('Access denied', 403);
-//       }
+//     const result = await InAppPurchaseService.verifyGooglePlayPurchase(
+//       purchaseToken,
+//       userId,
+//       planId
+//     );
+//     if (result.success) {
+//       return res
+//         .status(200)
+//         .json({ success: true, subscription: result.subscription });
+//     } else {
+//       return res.status(400).json({ success: false, message: result.error });
 //     }
-
-//     const sub = await InAppPurchaseService.updateInAppSubscription(
-//       req.params.id,
-//       { ...req.body, updatedBy: req.user._id }
-//     );
-//     if (!sub) throw new AppError('Subscription not found', 404);
-//     res.json({ success: true, data: sub });
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error instanceof Error ? error.message : 'Internal server error',
+//     });
 //   }
-// );
-
-// export const deleteInAppSubscription = catchAsync(
-//   async (req: Request, res: Response) => {
-//     const sub = await InAppPurchaseService.deleteInAppSubscription(
-//       req.params.id
-//     );
-//     if (!sub) throw new AppError('Subscription not found', 404);
-//     res.json({ success: true, message: 'Subscription deleted successfully' });
-//   }
-// );
+// };
 
 // // Webhook handler for payment providers
 // export const handlePaymentWebhook = catchAsync(

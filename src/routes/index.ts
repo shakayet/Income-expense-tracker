@@ -15,7 +15,7 @@ import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 import { ReviewRoutes } from '../app/modules/review/review.route';
 import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
 import { stripePayments } from '../stripe/stripeRoute';
-import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
+// import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
 // import { AuthRoutes } from '../app/modules/auth/auth.route';
@@ -42,10 +42,10 @@ const apiRoutes = [
     path: '/user',
     route: UserRoutes,
   },
-  {
-    path: '/in-app-purchase',
-    route: InAppPurchaseRoutes,
-  },
+  // {
+  //   path: '/in-app-purchase',
+  //   route: InAppPurchaseRoutes,
+  // },
   {
     path: '/auth',
     route: AuthRoutes,
@@ -95,11 +95,11 @@ const apiRoutes = [
   {
     path: '/stripe',
     route: stripePayments,
-  },
-  {
-    path: '/in-app-purchase',
-    route: InAppPurchaseRoutes,
   }
+  // {
+  //   path: '/in-app-purchase',
+  //   route: InAppPurchaseRoutes,
+  // }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
