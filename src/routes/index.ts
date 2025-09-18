@@ -15,6 +15,7 @@ import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 import { ReviewRoutes } from '../app/modules/review/review.route';
 import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
 import { stripePayments } from '../stripe/stripeRoute';
+import { Scraping } from '../app/modules/scraping/affiliate.routes';
 // import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
@@ -95,6 +96,10 @@ const apiRoutes = [
   {
     path: '/stripe',
     route: stripePayments,
+  },
+  {
+    path: '/scraping',
+    route: Scraping
   }
   // {
   //   path: '/in-app-purchase',
