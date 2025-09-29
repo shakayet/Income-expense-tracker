@@ -13,21 +13,24 @@ export type Product = {
 /**
  * Defines the structure for API credentials across various affiliate sites.
  */
+
+type SiteCreds = {
+  key?: string;
+  secret?: string;
+  token?: string; // for OAuth Bearer tokens
+}
+
 export type ApiCredentials = {
-  ebay?: { key: string };
-  amazon?: {
-    key: string;
-    secret: string;
-    associateTag: string;
-  };
-  temu?: { key: string }; 
-  subito?: { key: string }; 
-  alibaba?: { key: string }; 
-  zalando?: { key: string };
-  mediaworld?: { key: string };
-  notino?: { key: string };
-  douglas?: { key: string };
-  leroyMerlin?: { key: string };
-  backMarket?: { key: string };
-  swappie?: { key: string };
+  ebay?: SiteCreds;
+  amazon?: SiteCreds;
+  temu?: SiteCreds; 
+  subito?: SiteCreds;
+  alibaba?: SiteCreds;
+  zalando?: SiteCreds;
+  mediaworld?: SiteCreds;
+  notino?: SiteCreds;
+  douglas?: SiteCreds;
+  leroyMerlin?: SiteCreds;
+  backMarket?: SiteCreds;
+  swappie?: SiteCreds;
 };

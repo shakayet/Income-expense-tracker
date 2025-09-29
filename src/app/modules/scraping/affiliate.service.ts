@@ -4,7 +4,38 @@
 import { Product, ApiCredentials } from './affiliate.model';
 import axios from 'axios';
 
-const credentials: ApiCredentials = {};
+// const credentials: ApiCredentials = {};
+
+const credentials: ApiCredentials = {
+  ebay: {
+    key: "Shakayet-incomeex-SBX-975d8a3c1-21464f6f", // App ID
+    secret: "SBX-75d8a3c1f3d1-1ba3-40fc-9b3a-f5d3",  // Cert ID
+    token: "v^1.1#i^1#f^0#p^1#I^3#r^0#t^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" // Sandbox token
+  }
+};
+
+// 🔑 Helper to fetch fresh token if needed
+const getEbayAccessToken = async (): Promise<string> => {
+  const tokenUrl = "https://api.sandbox.ebay.com/identity/v1/oauth2/token";
+  const basicAuth = Buffer.from(
+    `${credentials.ebay.key}:${credentials.ebay.secret}`
+  ).toString("base64");
+
+  const res = await axios.post(
+    tokenUrl,
+    "grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope",
+    {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${basicAuth}`,
+      },
+    }
+  );
+
+  return res.data.access_token;
+};
+
+
 
 const genericSearch = async (siteName: string, query: string): Promise<Product[]> => {
   console.log(`Providing a generic search link for '${query}' on ${siteName}...`);
@@ -59,25 +90,43 @@ const searchAmazon = async (query: string, maxPrice: number): Promise<Product[]>
   }
 };
 
+// ✅ eBay real API search
 const searcheBay = async (query: string, maxPrice: number): Promise<Product[]> => {
-  const creds = credentials.ebay;
   try {
-    if (creds?.key) {
-      console.log('Using eBay API with credentials...');
-      const apiResponse = [{ siteName: 'eBay', productTitle: 'eBay API Product 1', productPrice: 39.99, productLink: 'https://ebay.com/api/1' }];
-      return apiResponse
+    if (credentials.ebay?.key && credentials.ebay?.secret) {
+      console.log('Using eBay Browse API with credentials...');
+
+      // 1. Get OAuth token (you can also use hardcoded token if still valid)
+      const token = await getEbayAccessToken();
+
+      // 2. Build Browse API query
+      const url = `https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+        query
+      )}&filter=price:[..${maxPrice}]&limit=3`;
+
+      const res = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const items = res.data.itemSummaries || [];
+      return items
+        .map((item: any) => ({
+          siteName: "eBay",
+          productTitle: item.title,
+          productPrice: item.price?.value ? parseFloat(item.price.value) : 0,
+          productLink: item.itemWebUrl,
+        }))
         .filter(p => p.productPrice !== null && p.productPrice <= maxPrice)
-        .sort((a, b) => (a.productPrice || 0) - (b.productPrice || 0))
-        .slice(0, 2);
+        .sort((a, b) => a.productPrice - b.productPrice)
+        .slice(0, 1); // ⬅ return only lowest price
     } else {
-      return genericSearch('eBay', query);
+      return [];
     }
-  } catch (error) {
-    console.error('eBay search failed:', error);
+  } catch (error: any) {
+    console.error('eBay search failed:', error.response?.data || error.message);
     return [];
   }
 };
-
 // FIX: New search function for Temu
 const searchTemu = async (query: string, maxPrice: number): Promise<Product[]> => {
   const creds = credentials.temu;
