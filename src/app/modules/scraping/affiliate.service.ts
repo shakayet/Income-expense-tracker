@@ -6,8 +6,7 @@ import axios from 'axios';
 
 const credentials: ApiCredentials = {};
 
-
-
+// 🔑 Helper to fetch fresh token if needed
 
 
 const genericSearch = async (siteName: string, query: string): Promise<Product[]> => {
