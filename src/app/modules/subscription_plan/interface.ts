@@ -7,8 +7,6 @@ export type ISubscriptionPlan = {
   price: number;
   created_at: Date;
   updated_at: Date;
-  created_by?: ObjectId;
-  updated_by?: ObjectId;
 }
 
 export type ISubscriptionPlanInput = {
@@ -16,6 +14,5 @@ export type ISubscriptionPlanInput = {
   plan_id: string;
   duration_days: number;
   price: number;
-  created_by?: ObjectId;
   updated_by?: ObjectId;
 }

@@ -1,22 +1,35 @@
 import { Router } from 'express';
 import { SubscriptionPlanController } from './controller';
+import auth from '../../middlewares/auth';
+import { USER_ROLES } from '../../../enums/user';
 
 const router = Router();
 const subscriptionPlanController = new SubscriptionPlanController();
 
-// POST /api/subscription-plans - Create new subscription plan
-router.post('/', subscriptionPlanController.createSubscriptionPlan);
+router.post(
+  '/',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  subscriptionPlanController.createSubscriptionPlan
+);
+router.get(
+  '/',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+  subscriptionPlanController.getAllSubscriptionPlans
+);
+router.get(
+  '/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+  subscriptionPlanController.getSubscriptionPlanById
+);
+router.put(
+  '/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+  subscriptionPlanController.updateSubscriptionPlan
+);
+router.delete(
+  '/:id',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
+  subscriptionPlanController.deleteSubscriptionPlan
+);
 
-// GET /api/subscription-plans - Get all subscription plans
-router.get('/', subscriptionPlanController.getAllSubscriptionPlans);
-
-// GET /api/subscription-plans/:id - Get subscription plan by ID
-router.get('/:id', subscriptionPlanController.getSubscriptionPlanById);
-
-// PUT /api/subscription-plans/:id - Update subscription plan
-router.put('/:id', subscriptionPlanController.updateSubscriptionPlan);
-
-// DELETE /api/subscription-plans/:id - Delete subscription plan
-router.delete('/:id', subscriptionPlanController.deleteSubscriptionPlan);
-
-export default router;
+export const SubscriptionPlan = router;

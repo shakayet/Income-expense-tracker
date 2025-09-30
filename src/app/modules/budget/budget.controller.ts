@@ -683,13 +683,13 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
       {
         $addFields: {
           totalExpense: { $sum: '$categories.spent' },
-          effectiveTotalBudget: {
-            $cond: [
-              { $gt: ['$totalBudget', 0] },
-              '$totalBudget',
-              '$totalCategoryAmount',
-            ],
-          },
+          // effectiveTotalBudget: {
+          //   $cond: [
+          //     { $gt: ['$totalBudget', 0] },
+          //     '$totalBudget',
+          //     '$totalCategoryAmount',
+          //   ],
+          // },
         },
       },
       // Projection
@@ -697,32 +697,32 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
         $project: {
           _id: 0,
           month: 1,
-          totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
+          // totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
           totalBudget: { $toString: { $round: ['$totalBudget', 2] } },
-          totalCategoryAmount: {
-            $toString: { $round: ['$totalCategoryAmount', 2] },
-          },
-          effectiveTotalBudget: {
-            $toString: { $round: ['$effectiveTotalBudget', 2] },
-          },
+          // totalCategoryAmount: {
+          //   $toString: { $round: ['$totalCategoryAmount', 2] },
+          // },
+          // effectiveTotalBudget: {
+          //   $toString: { $round: ['$effectiveTotalBudget', 2] },
+          // },
           totalExpense: { $toString: { $round: ['$totalExpense', 2] } },
-          totalRemaining: {
-            $toString: {
-              $round: [
-                { $subtract: ['$effectiveTotalBudget', '$totalExpense'] },
-                2,
-              ],
-            },
-          },
+          // totalRemaining: {
+          //   $toString: {
+          //     $round: [
+          //       { $subtract: ['$effectiveTotalBudget', '$totalExpense'] },
+          //       2,
+          //     ],
+          //   },
+          // },
           totalPercentageUsed: {
             $toString: {
               $round: [
                 {
                   $cond: [
-                    { $gt: ['$effectiveTotalBudget', 0] },
+                    { $gt: ['$totalBudget', 0] },
                     {
                       $multiply: [
-                        { $divide: ['$totalExpense', '$effectiveTotalBudget'] },
+                        { $divide: ['$totalExpense', '$totalBudget'] },
                         100,
                       ],
                     },
@@ -733,35 +733,35 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               ],
             },
           },
-          totalPercentageLeft: {
-            $toString: {
-              $round: [
-                {
-                  $cond: [
-                    { $gt: ['$effectiveTotalBudget', 0] },
-                    {
-                      $subtract: [
-                        100,
-                        {
-                          $multiply: [
-                            {
-                              $divide: [
-                                '$totalExpense',
-                                '$effectiveTotalBudget',
-                              ],
-                            },
-                            100,
-                          ],
-                        },
-                      ],
-                    },
-                    0,
-                  ],
-                },
-                2,
-              ],
-            },
-          },
+          // totalPercentageLeft: {
+          //   $toString: {
+          //     $round: [
+          //       {
+          //         $cond: [
+          //           { $gt: ['$effectiveTotalBudget', 0] },
+          //           {
+          //             $subtract: [
+          //               100,
+          //               {
+          //                 $multiply: [
+          //                   {
+          //                     $divide: [
+          //                       '$totalExpense',
+          //                       '$effectiveTotalBudget',
+          //                     ],
+          //                   },
+          //                   100,
+          //                 ],
+          //               },
+          //             ],
+          //           },
+          //           0,
+          //         ],
+          //       },
+          //       2,
+          //     ],
+          //   },
+          // },
           categories: {
             $map: {
               input: '$categories',
@@ -771,52 +771,52 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 budgetAmount: {
                   $toString: { $round: ['$$cat.budgetAmount', 2] },
                 },
-                spent: { $toString: { $round: ['$$cat.spent', 2] } },
+                // spent: { $toString: { $round: ['$$cat.spent', 2] } },
                 remaining: { $toString: { $round: ['$$cat.remaining', 2] } },
                 percentageUsed: {
                   $toString: { $round: ['$$cat.percentageUsed', 2] },
                 },
-                status: '$$cat.status',
+                // status: '$$cat.status',
               },
             },
           },
-          summary: {
-            totalCategories: { $size: '$categories' },
-            categoriesExceeded: {
-              $size: {
-                $filter: {
-                  input: '$categories',
-                  as: 'cat',
-                  cond: { $eq: ['$$cat.status', 'exceeded'] },
-                },
-              },
-            },
-            categoriesInWarning: {
-              $size: {
-                $filter: {
-                  input: '$categories',
-                  as: 'cat',
-                  cond: { $eq: ['$$cat.status', 'warning'] },
-                },
-              },
-            },
-            categoriesGood: {
-              $size: {
-                $filter: {
-                  input: '$categories',
-                  as: 'cat',
-                  cond: { $eq: ['$$cat.status', 'good'] },
-                },
-              },
-            },
-            budgetType: {
-              $cond: [
-                { $gt: ['$totalBudget', 0] },
-                'monthly_budget_set',
-                'category_only_budget',
-              ],
-            },
-          },
+          // summary: {
+          //   totalCategories: { $size: '$categories' },
+          //   categoriesExceeded: {
+          //     $size: {
+          //       $filter: {
+          //         input: '$categories',
+          //         as: 'cat',
+          //         cond: { $eq: ['$$cat.status', 'exceeded'] },
+          //       },
+          //     },
+          //   },
+          //   categoriesInWarning: {
+          //     $size: {
+          //       $filter: {
+          //         input: '$categories',
+          //         as: 'cat',
+          //         cond: { $eq: ['$$cat.status', 'warning'] },
+          //       },
+          //     },
+          //   },
+          //   categoriesGood: {
+          //     $size: {
+          //       $filter: {
+          //         input: '$categories',
+          //         as: 'cat',
+          //         cond: { $eq: ['$$cat.status', 'good'] },
+          //       },
+          //     },
+          //   },
+          //   budgetType: {
+          //     $cond: [
+          //       { $gt: ['$totalBudget', 0] },
+          //       'monthly_budget_set',
+          //       'category_only_budget',
+          //     ],
+          //   },
+          // },
         },
       },
     ]);
