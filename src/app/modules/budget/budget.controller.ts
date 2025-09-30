@@ -833,3 +833,150 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
+
+export const getSimpleBudgetDetails = async (req: Request, res: Response) => {
+  try {
+    // Extract userId from JWT payload (req.user should be set by authentication middleware)
+    const userId = (req.user as { id: string })?.id;
+    // Extract month from query parameters (from URL like ?Month=2025-09)
+    const month = req.query.Month as string;
+    // const { month } = req.params;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'User not authenticated' });
+    }
+
+    if (!month) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Month parameter is required' });
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+
+    const budgetResult = await Budget.aggregate([
+      {
+        $match: { userId: userIdObj, month },
+      },
+      {
+        $project: {
+          _id: 0,
+          month: 1,
+          amount: {
+            $cond: [
+              { $gt: ['$totalBudget', 0] },
+              '$totalBudget',
+              '$totalCategoryAmount',
+            ],
+          },
+        },
+      },
+    ]);
+
+    if (!budgetResult || budgetResult.length === 0) {
+      return res
+        .status(404)
+        .json({
+          success: false,
+          message: 'Budget not found for the specified month',
+        });
+    }
+
+    // Simplify the response to only include month and amount
+    const simpleData = {
+      month: budgetResult[0].month,
+      amount: budgetResult[0].amount,
+    };
+
+    return res.json({ success: true, data: simpleData });
+  } catch (error) {
+    console.error('Error in getSimpleBudgetDetails:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+export const postSimpleBudgetDetails = async (req: Request, res: Response) => {
+  try {
+    // Extract userId from JWT payload (req.user should be set by authentication middleware)
+    const userId = (req.user as { id: string })?.id;
+    // Extract month and amount from request body
+    const { month, amount } = req.body;
+
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'User not authenticated' });
+    }
+
+    if (!month || amount === undefined) {
+      return res
+        .status(400)
+        .json({ 
+          success: false, 
+          message: 'Month and amount parameters are required' 
+        });
+    }
+
+    if (typeof amount !== 'number' || amount < 0) {
+      return res
+        .status(400)
+        .json({ 
+          success: false, 
+          message: 'Amount must be a positive number' 
+        });
+    }
+
+    const userIdObj = new mongoose.Types.ObjectId(userId);
+
+    // Find and update the budget, or create if it doesn't exist
+    const budget = await Budget.findOneAndUpdate(
+      { userId: userIdObj, month },
+      { 
+        $set: { 
+          totalBudget: amount,
+          month,
+          userId: userIdObj
+        }
+      },
+      { 
+        upsert: true, // Create if doesn't exist
+        new: true, // Return the updated document
+        runValidators: true 
+      }
+    );
+
+    return res.json({ 
+      success: true, 
+      message: 'Budget saved successfully',
+      data: {
+        month: budget.month,
+        amount: budget.totalBudget
+      }
+    });
+  } catch (error: any) {
+    console.error('Error in postSimpleBudgetDetails:', error);
+    
+    // Handle duplicate key errors or validation errors
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Validation error', 
+        error: error.message 
+      });
+    }
+    
+    if (error.code === 11000) { // MongoDB duplicate key error
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Budget already exists for this month' 
+      });
+    }
+
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Server Error' 
+    });
+  }
+};

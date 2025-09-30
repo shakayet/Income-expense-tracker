@@ -63,42 +63,7 @@ const searchAmazon = async (query: string, maxPrice: number): Promise<Product[]>
 };
 
 // ✅ eBay real API search
-const searcheBay = async (query: string, maxPrice: number): Promise<Product[]> => {
-  try {
-    if (credentials.ebay?.key && credentials.ebay?.secret) {
-      console.log('Using eBay Browse API with credentials...');
 
-      // 1. Get OAuth token (you can also use hardcoded token if still valid)
-      const token = await getEbayAccessToken();
-
-      // 2. Build Browse API query
-      const url = `https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
-        query
-      )}&filter=price:[..${maxPrice}]&limit=3`;
-
-      const res = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const items = res.data.itemSummaries || [];
-      return items
-        .map((item: any) => ({
-          siteName: "eBay",
-          productTitle: item.title,
-          productPrice: item.price?.value ? parseFloat(item.price.value) : 0,
-          productLink: item.itemWebUrl,
-        }))
-        .filter(p => p.productPrice !== null && p.productPrice <= maxPrice)
-        .sort((a, b) => a.productPrice - b.productPrice)
-        .slice(0, 1); // ⬅ return only lowest price
-    } else {
-      return [];
-    }
-  } catch (error: any) {
-    console.error('eBay search failed:', error.response?.data || error.message);
-    return [];
-  }
-};
 // FIX: New search function for Temu
 const searchTemu = async (query: string, maxPrice: number): Promise<Product[]> => {
   const creds = credentials.temu;
@@ -311,7 +276,7 @@ export class AffiliateService {
   public async searchProducts(searchQuery: string, maxPrice: number): Promise<Product[]> {
     const allPromises = [
       searchAmazon(searchQuery, maxPrice),
-      searcheBay(searchQuery, maxPrice),
+      // searcheBay(searchQuery, maxPrice),
       searchTemu(searchQuery, maxPrice),
       searchSubito(searchQuery, maxPrice),
       searchAlibaba(searchQuery, maxPrice),

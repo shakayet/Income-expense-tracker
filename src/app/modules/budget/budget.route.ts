@@ -8,6 +8,8 @@ import {
   setMonthlyBudget,
   updateMonthlyBudget,
   getMonthlyBudgetAndMonth,
+  getSimpleBudgetDetails,
+  postSimpleBudgetDetails,
 } from './budget.controller';
 import validateRequest from '../../middlewares/validateRequest';
 import {
@@ -30,6 +32,10 @@ router.get('/monthly-budget', getMonthlyBudgetAndMonth);
 router.use(auth(USER_ROLES.USER));
 
 router.route('/monthly').post(setMonthlyBudget);
+
+
+router.route('/simple-monthly-budget').post(postSimpleBudgetDetails);
+router.route('/simple-monthly-budget').get(getSimpleBudgetDetails);
 
 router
   .route('/monthly/:month')
