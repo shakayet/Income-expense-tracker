@@ -4,7 +4,7 @@
 import { Product, ApiCredentials } from './affiliate.model';
 import axios from 'axios';
 
-const credentials: ApiCredentials = {};
+const credentials: ApiCred = {};
 
 
 const genericSearch = async (siteName: string, query: string): Promise<Product[]> => {
