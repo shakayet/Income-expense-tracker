@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import catchAsync from '../../../shared/catchAsync';
@@ -85,7 +86,6 @@ const updateProfile = catchAsync(async (req: Request, res: Response) => {
   if (!user || !user.id) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const image = getSingleFilePath(req.files as any, 'image');
 
   const data = {
@@ -126,7 +126,6 @@ const updateFcmToken = async (req: Request, res: Response) => {
 
     res.status(200).json({ message: 'FCM token updated successfully' });
   } catch (error) {
-    // Optionally log error
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -193,6 +192,55 @@ const verifyPin = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+// ✅ NEW — Send OTP for sensitive actions (email/password change)
+const sendOtpForSensitiveAction = catchAsync(async (req: Request, res: Response) => {
+  const userId = (req.user as { id?: string })?.id;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+  const result = await UserService.sendOtpForSensitiveAction(userId);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+  });
+});
+
+// ✅ NEW — Change Email
+const changeEmail = catchAsync(async (req: Request, res: Response) => {
+  const userId = (req.user as { id?: string })?.id;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+  const { newEmail, otp } = req.body;
+  if (!newEmail || !otp) {
+    return res.status(400).json({ message: 'New email and OTP are required' });
+  }
+
+  const result = await UserService.changeEmail(userId, newEmail, otp);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+  });
+});
+
+// ✅ NEW — Change Password
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  const userId = (req.user as { id?: string })?.id;
+  if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+  const { newPassword, otp } = req.body;
+  if (!newPassword || !otp) {
+    return res.status(400).json({ message: 'New password and OTP are required' });
+  }
+
+  const result = await UserService.changePassword(userId, newPassword, otp);
+  sendResponse(res, {
+    success: true,
+    statusCode: StatusCodes.OK,
+    message: result.message,
+  });
+});
+
 export const UserController = {
   createUser,
   getUserProfile,
@@ -205,4 +253,7 @@ export const UserController = {
   getUserListForAdmin,
   getUserProfileById,
   updateUserById,
+  sendOtpForSensitiveAction, // ✅ new
+  changeEmail,               // ✅ new
+  changePassword,            // ✅ new
 };

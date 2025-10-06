@@ -70,4 +70,15 @@ router.patch(
   auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
   UserController.updateUserById
 );
+
+// otp for sensitive actions
+router
+  .route('/send-otp')
+  .post(auth(USER_ROLES.USER), UserController.sendOtpForSensitiveAction);
+router
+  .route('/change-email')
+  .patch(auth(USER_ROLES.USER), UserController.changeEmail);
+router
+  .route('/change-password')
+  .patch(auth(USER_ROLES.USER), UserController.changePassword);
 export const UserRoutes = router;

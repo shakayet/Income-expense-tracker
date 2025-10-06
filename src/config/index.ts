@@ -35,4 +35,5 @@ export default {
     email: process.env.SUPER_ADMIN_EMAIL,
     password: process.env.SUPER_ADMIN_PASSWORD,
   },
+  admob_publisher_id: process.env.ADMOB_Publisher_ID,
 };
