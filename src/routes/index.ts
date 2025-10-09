@@ -16,6 +16,7 @@ import { ReviewRoutes } from '../app/modules/review/review.route';
 import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
 import { stripePayments } from '../stripe/stripeRoute';
 import { Scraping } from '../app/modules/scraping/affiliate.routes';
+import { NotificationRoutes } from '../app/modules/notification/notification.route';
 // import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
@@ -67,12 +68,18 @@ const apiRoutes = [
     path: '/reports',
     route: ReportRoutes,
   },
-  // {
-  //   path: '/notifications',
-  //   route: NotificationRoutes,
-  // },
-  { path: '/plan', route: PlanRoutes },
-  { path: '/subscription', route: SubscriptionRoutes },
+  {
+    path: '/notifications',
+    route: NotificationRoutes,
+  },
+  { 
+    path: '/plan', 
+    route: PlanRoutes 
+  },
+  { 
+    path: '/subscription', 
+    route: SubscriptionRoutes 
+  },
   {
     path: '/category',
     route: CategoryRoutes,

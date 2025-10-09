@@ -1,8 +1,10 @@
+/* eslint-disable no-console */
 import { Request, Response } from 'express';
 import * as expenseService from './expense.service';
 import { expenseUpdateSchema } from './expense.zod';
-import { Types, isValidObjectId } from 'mongoose';
+import mongoose, { Types, isValidObjectId } from 'mongoose';
 import { Category } from '../category/category.model';
+import expenseModel from './expense.model';
 
 export const createExpense = async (req: Request, res: Response) => {
   try {
@@ -120,4 +122,73 @@ export const getExpense = async (req: Request, res: Response) => {
   }
 
   res.json(expense);
+};
+
+export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    let { month } = req.query;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    // Convert userId to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Determine month range
+    let startDate: Date;
+    let endDate: Date;
+
+    if (month) {
+      // Month provided → format: YYYY-MM
+      const [year, monthStr] = (month as string).split('-');
+      const monthNum = parseInt(monthStr) - 1; // JS month is 0-indexed
+      startDate = new Date(Number(year), monthNum, 1);
+      endDate = new Date(Number(year), monthNum + 1, 0, 23, 59, 59, 999);
+    } else {
+      // Default: current month
+      const now = new Date();
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      month = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+    }
+
+    const summary = await expenseModel.aggregate([
+      {
+        $match: {
+          userId: userObjectId,
+          createdAt: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: '$category', // category is ObjectId here
+          totalAmount: { $sum: '$amount' },
+        },
+      },
+    ]);
+
+    const totalExpense = summary.reduce(
+      (acc: number, item: { totalAmount: number }) => acc + item.totalAmount,
+      0
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        month,
+        totalExpense,
+        breakdown: summary.map((item: { _id: string; totalAmount: number }) => ({
+          category: item._id,
+          amount: item.totalAmount,
+        })),
+      },
+    });
+  } catch (error) {
+    console.error('Expense summary error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch monthly expense summary',
+      error,
+    });
+  }
 };
