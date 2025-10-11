@@ -131,60 +131,70 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    // Convert userId to ObjectId
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    // Determine month range
-    let startDate: Date;
-    let endDate: Date;
-
-    if (month) {
-      // Month provided → format: YYYY-MM
-      const [year, monthStr] = (month as string).split('-');
-      const monthNum = parseInt(monthStr) - 1; // JS month is 0-indexed
-      startDate = new Date(Number(year), monthNum, 1);
-      endDate = new Date(Number(year), monthNum + 1, 0, 23, 59, 59, 999);
-    } else {
-      // Default: current month
+    // Auto-detect current month if not provided
+    if (!month) {
       const now = new Date();
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      month = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+      const year = now.getFullYear();
+      const monthNum = (now.getMonth() + 1).toString().padStart(2, '0');
+      month = `${year}-${monthNum}`;
     }
+
+    const [year, monthNum] = (month as string).split('-').map(Number);
+
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 1);
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
     const summary = await expenseModel.aggregate([
       {
         $match: {
           userId: userObjectId,
-          createdAt: { $gte: startDate, $lte: endDate },
+          createdAt: { $gte: startDate, $lt: endDate },
         },
       },
       {
+        $lookup: {
+          from: 'categories', // name of your categories collection
+          localField: 'category',
+          foreignField: '_id',
+          as: 'categoryData',
+        },
+      },
+      { $unwind: '$categoryData' },
+      {
         $group: {
-          _id: '$category', // category is ObjectId here
+          _id: '$categoryData._id',
+          categoryName: { $first: '$categoryData.name' },
           totalAmount: { $sum: '$amount' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          categoryId: '$_id',
+          categoryName: 1,
+          totalAmount: 1,
         },
       },
     ]);
 
-    const totalExpense = summary.reduce(
-      (acc: number, item: { totalAmount: number }) => acc + item.totalAmount,
-      0
-    );
+    const totalExpense = summary.reduce((acc: number, item: { totalAmount: number }) => acc + item.totalAmount, 0);
 
     res.status(200).json({
       success: true,
       data: {
         month,
         totalExpense,
-        breakdown: summary.map((item: { _id: string; totalAmount: number }) => ({
-          category: item._id,
+        breakdown: summary.map(item => ({
+          // categoryId: item.categoryId,
+          categoryName: item.categoryName,
           amount: item.totalAmount,
         })),
       },
     });
   } catch (error) {
-    console.error('Expense summary error:', error);
+    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch monthly expense summary',

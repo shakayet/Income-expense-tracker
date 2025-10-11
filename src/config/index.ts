@@ -36,4 +36,14 @@ export default {
     password: process.env.SUPER_ADMIN_PASSWORD,
   },
   admob_publisher_id: process.env.ADMOB_Publisher_ID,
+  ebay: {
+    client_id: process.env.EBAY_CLIENT,
+    client_secret: process.env.EBAY_SECRET,
+  },
+  amazon: {
+    client_id: process.env.AMAZON_client,
+    client_secret: process.env.AMAZON_secret,
+    aws_access_key: process.env.AWS_ACCESS_KEY_ID,
+    aws_secret_key: process.env.AWS_SECRET_ACCESS_KEY,
+  },
 };

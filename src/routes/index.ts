@@ -17,6 +17,8 @@ import { recentTransaction } from '../app/modules/recentTransaction/recentTransa
 import { stripePayments } from '../stripe/stripeRoute';
 import { Scraping } from '../app/modules/scraping/affiliate.routes';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
+import { MarketplaceRoutes } from '../app/modules/marketplace/marketplace.route';
+import { MarketplacecredentialRoutes } from '../app/modules/marketplacecredential/marketplacecredential.route';
 // import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
@@ -72,13 +74,13 @@ const apiRoutes = [
     path: '/notifications',
     route: NotificationRoutes,
   },
-  { 
-    path: '/plan', 
-    route: PlanRoutes 
+  {
+    path: '/plan',
+    route: PlanRoutes,
   },
-  { 
-    path: '/subscription', 
-    route: SubscriptionRoutes 
+  {
+    path: '/subscription',
+    route: SubscriptionRoutes,
   },
   {
     path: '/category',
@@ -106,8 +108,11 @@ const apiRoutes = [
   },
   {
     path: '/scraping',
-    route: Scraping
-  }
+    route: Scraping,
+  },
+
+  { path: '/marketplace', route: MarketplaceRoutes },
+  { path: '/marketplacecredential', route: MarketplacecredentialRoutes },
   // {
   //   path: '/in-app-purchase',
   //   route: InAppPurchaseRoutes,
