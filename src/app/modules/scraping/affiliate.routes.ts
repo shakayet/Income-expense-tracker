@@ -23,6 +23,7 @@ router.post(
   affiliateController.testCredentials
 );
 
-router.get('/search', auth('USER'), affiliateController.searchProducts);
+router.get('/search', 
+   affiliateController.searchProducts);
 
 export const Scraping = router;
