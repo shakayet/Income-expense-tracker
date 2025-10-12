@@ -295,3 +295,5 @@ export class AffiliateService {
     return allProducts;
   }
 }
+
+export { genericSearch };

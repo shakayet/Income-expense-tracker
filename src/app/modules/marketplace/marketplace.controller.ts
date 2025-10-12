@@ -10,6 +10,8 @@ import {
   getSingleProductFromEbay,
   getTopCheapestProductsFromEbay,
 } from './util';
+import { SearchTypeModel } from './marketplace.model';
+import { genericSearch } from '../scraping/affiliate.service';
 
 const updateMarketplace = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -40,22 +42,80 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-async function searchProduct(req: Request, res: Response) {
+export async function searchProduct(req: Request, res: Response) {
   try {
     const query = (req.query.text as string) || 'bike';
+    const maxPrice = Number(req.query.maxPrice) || 999999;
 
-    // Run both API calls concurrently
-    const [amazon, ebay] = await Promise.all([
-      getCheapestAmazonProducts(query),
-      getTopCheapestProductsFromEbay(query),
-    ]);
+    // ✅ Get the current search type
+    const searchType = await SearchTypeModel.findOne({});
 
-    console.log({ amazon, ebay });
+    let result: Record<string, any> = {};
 
-    res.json({ amazon, ebay });
+    // ==============================
+    // 🔹 CASE 1: API Search Mode
+    // ==============================
+    if (searchType?.type === 'API') {
+      console.log('🔍 Performing API-based search...');
+
+      const [amazon, ebay] = await Promise.all([
+        getCheapestAmazonProducts(query),
+        getTopCheapestProductsFromEbay(query),
+      ]);
+
+      result = { amazon, ebay };
+    }
+
+    // ==============================
+    // 🔹 CASE 2: GENERIC Search Mode
+    // ==============================
+    else if (searchType?.type === 'GENERIC') {
+      console.log('🔍 Performing GENERIC (link-based) search...');
+
+      const sites = [
+        'Amazon',
+        'Temu',
+        'Subito',
+        'Alibaba',
+        'Zalando',
+        'Mediaworld',
+        'Notino',
+        'Douglas',
+        'Leroy Merlin',
+        'Back Market',
+        'Swappie',
+      ];
+
+      // Run all generic searches concurrently
+      const genericResults = await Promise.all(
+        sites.map(site => genericSearch(site, query))
+      );
+
+      // Flatten and merge results
+      const mergedResults = genericResults.flat();
+
+      result = { generic: mergedResults };
+    }
+
+    // ==============================
+    // 🔹 CASE 3: Fallback (no type)
+    // ==============================
+    else {
+      console.log('⚠️ No search type configured in database.');
+      result = { message: 'No valid search type found in system.' };
+    }
+
+    // ✅ Send the unified response
+    return res.status(200).json({
+      success: true,
+      data: result,
+    });
   } catch (err: any) {
-    console.error('Error fetching products:', err);
-    res.status(500).json({ error: err?.response?.data || err.message });
+    console.error('❌ Error fetching products:', err);
+    res.status(500).json({
+      success: false,
+      error: err?.response?.data || err.message,
+    });
   }
 }
 
