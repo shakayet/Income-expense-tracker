@@ -10,7 +10,6 @@ export const MarketplacecredentialValidations = {
       awsAccessKeyId: z.string().optional(),
       awsSecretAccessKey: z.string().optional(),
       marketplaceId: z.string().optional(),
-      environment: z.string(),
     }),
   }),
 

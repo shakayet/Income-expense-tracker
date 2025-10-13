@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express';
 import { MarketplaceServices } from './marketplace.service';
 import catchAsync from '../../../shared/catchAsync';
@@ -44,8 +46,8 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
 
 export async function searchProduct(req: Request, res: Response) {
   try {
-    const query = (req.query.text as string) || 'bike';
-    const maxPrice = Number(req.query.maxPrice) || 999999;
+    const query = (req.query.product as string) || 'bike';
+    // const maxPrice = Number(req.query.maxPrice) || 999999;
 
     // ✅ Get the current search type
     const searchType = await SearchTypeModel.findOne({});
@@ -163,7 +165,7 @@ const createSearchType = catchAsync(async (req: Request, res: Response) => {
 
 const getSearchType = catchAsync(async (req: Request, res: Response) => {
   const user = req.user!;
-  const marketplaceData = req.body;
+  // const marketplaceData = req.body;
 
   const result = await MarketplaceServices.getSearchType(user);
 

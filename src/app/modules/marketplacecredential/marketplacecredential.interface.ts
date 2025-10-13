@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-types */
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
 import { Model, Types } from 'mongoose';
 
 export interface IMarketplacecredentialFilterables {
