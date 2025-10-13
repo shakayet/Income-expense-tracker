@@ -6,13 +6,14 @@ const createSavings = async (data: ISavings) => {
   const savingsValue = data.initialPrice - data.actualPrice;
   const newSavings = await Savings.create({
     ...data,
+    // categoryName: data.category, // Store category name at creation time
     savings: savingsValue,
   });
   return newSavings;
 };
 
 const getAllSavings = async (userId: string) => {
-  return Savings.findOne({ userId }).sort({ createdAt: -1 });
+  return Savings.find({ userId }).sort({ createdAt: -1 });
 };
 
 const getSavingsSummaryByCategory = async (userId: string) => {

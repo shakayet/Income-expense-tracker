@@ -30,15 +30,22 @@ export const createCategory = async (payload: ICategory, userId: string) => {
 };
 
 const getAllCategories = async (userId: string) => {
-  const categories = await Category.find({
-    $or: [
-      //   { userId: null }, // Default categories
-      { userId: userId }, // Custom categories created by this user
-    ],
-  });
+  const categories = await Category.find(
+    {
+      $or: [
+        { userId: null }, // Default categories
+        { userId: userId }, // User-specific categories
+      ],
+    },
+    { _id: 1, name: 1 } // 👈 Only return _id and name
+  ).sort({ createdAt: -1 });
 
-  return categories;
+  return categories.map(cat => ({
+    categoryId: cat._id,
+    categoryName: cat.name,
+  }));
 };
+
 
 const updateCategory = async (
   categoryId: string,
