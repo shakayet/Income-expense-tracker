@@ -19,6 +19,7 @@ import { Scraping } from '../app/modules/scraping/affiliate.routes';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { MarketplaceRoutes } from '../app/modules/marketplace/marketplace.route';
 import { MarketplacecredentialRoutes } from '../app/modules/marketplacecredential/marketplacecredential.route';
+import { SavingsRoutes } from '../app/modules/savings/savings.route';
 // import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
@@ -110,9 +111,18 @@ const apiRoutes = [
     path: '/scraping',
     route: Scraping,
   },
-
-  { path: '/marketplace', route: MarketplaceRoutes },
-  { path: '/marketplacecredential', route: MarketplacecredentialRoutes },
+  { 
+    path: '/marketplace', 
+    route: MarketplaceRoutes 
+  },
+  { 
+    path: '/marketplacecredential', 
+    route: MarketplacecredentialRoutes 
+  },
+  {
+    path: '/savings',
+    route: SavingsRoutes,
+  }
   // {
   //   path: '/in-app-purchase',
   //   route: InAppPurchaseRoutes,
