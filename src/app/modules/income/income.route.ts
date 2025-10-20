@@ -8,6 +8,7 @@ import {
   createIncomeCategory,
   updateIncomeCategory,
   getIncomeCategories,
+  deleteIncomeCategory,
 } from './income.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
@@ -21,6 +22,9 @@ router.route('/summary').get(getMonthlyIncomeSummary);
 
 router.route('/categories').get(getIncomeCategories).post(createIncomeCategory);
 
-router.route('/categories/:id').patch(updateIncomeCategory);
+router
+  .route('/categories/:id')
+  .patch(updateIncomeCategory)
+  .delete(deleteIncomeCategory);
 
 export const IncomeRoutes = router;

@@ -4,7 +4,7 @@ import * as expenseService from './expense.service';
 import { expenseUpdateSchema } from './expense.zod';
 import mongoose, { Types, isValidObjectId } from 'mongoose';
 import { Category } from '../category/category.model';
-import expenseModel from './expense.model';
+import expenseModel, { ExpenseCategory } from './expense.model';
 
 export const createExpense = async (req: Request, res: Response) => {
   try {
@@ -202,3 +202,59 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const createExpenseCategory = async (req: Request, res: Response) => {
+  try {
+    const { name, icon } = req.body;
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+
+    const category = await ExpenseCategory.create({ name, icon, userId });
+    res.status(201).json({ success: true, data: category });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create income category', error });
+  }
+};
+
+export const updateExpenseCategory = async (req: Request, res: Response) => {
+  try {
+    const categoryId = req.params.id;
+    const { name, icon } = req.body;
+    const userId = req.user?.id;
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!mongoose.Types.ObjectId.isValid(categoryId))
+      return res.status(400).json({ success: false, message: 'Invalid category id' });
+
+    const updated = await ExpenseCategory.findOneAndUpdate(
+      { _id: categoryId, userId },
+      { name, icon },
+      { new: true }
+    );
+
+    if (!updated)
+      return res.status(404).json({ success: false, message: 'Category not found or unauthorized' });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update income category', error });
+  }
+};
+
+export const getExpenseCategories = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const categories = await ExpenseCategory.find({
+      $or: [{ userId: null }, { userId }],
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch expense categories', error });
+  }
+};
+

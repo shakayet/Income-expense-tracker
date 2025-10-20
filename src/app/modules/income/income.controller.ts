@@ -258,3 +258,37 @@ export const getIncomeCategories = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: 'Failed to fetch income categories', error });
   }
 };
+
+// Delete income category
+export const deleteIncomeCategory = async (req: Request, res: Response) => {
+  try {
+    const categoryId = req.params.id;
+    const userId = getUserIdFromReq(req);
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!mongoose.Types.ObjectId.isValid(categoryId))
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid category id' });
+
+    const deleted = await IncomeCategory.findOneAndDelete({
+      _id: categoryId,
+      userId,
+    });
+
+    if (!deleted)
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found or unauthorized',
+      });
+
+    res
+      .status(200)
+      .json({ success: true, message: 'Income category deleted successfully' });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to delete income category', error });
+  }
+};
+
