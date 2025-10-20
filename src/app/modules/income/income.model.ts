@@ -26,4 +26,14 @@ const incomeSchema = new Schema<IIncome>({
   }
 });
 
+const incomeCategorySchema = new Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    icon: { type: String, default: null },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  },
+  { timestamps: true }
+);
+
+export const IncomeCategory = model('IncomeCategory', incomeCategorySchema);
 export const Income = model<IIncome>('Income', incomeSchema);
