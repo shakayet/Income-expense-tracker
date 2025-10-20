@@ -32,5 +32,6 @@ router
   .delete(expenseController.deleteExpense);
 
 router.route('/categories/:id').patch(expenseController.updateExpenseCategory);
+router.route('/categories/:id').delete(expenseController.deleteIncomeCategory);
 
 export const ExpenseRoutes = router;
