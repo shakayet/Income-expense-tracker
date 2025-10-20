@@ -20,11 +20,10 @@ router.route('/:id').patch(updateIncome).delete(deleteIncome);
 router.route('/summary').get(getMonthlyIncomeSummary);
 
 router
-  .route('/')
+  .route('/income-categories')
   .get(getIncomeCategories)
   .post(createIncomeCategory);
 
-router.route('/:id').patch(updateIncomeCategory);
-
+router.route('/categories/:id').patch(updateIncomeCategory);
 
 export const IncomeRoutes = router;
