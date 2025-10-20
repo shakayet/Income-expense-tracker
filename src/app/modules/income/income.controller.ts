@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express';
-import { Income } from './income.model';
+import { Income, IncomeCategory } from './income.model';
 import mongoose from 'mongoose';
 
 const getUserIdFromReq = (req: Request): string | null => {
@@ -201,5 +201,60 @@ export const getMonthlyIncomeSummary = async (req: Request, res: Response) => {
       message: 'Failed to fetch monthly income summary',
       error,
     });
+  }
+};
+
+export const createIncomeCategory = async (req: Request, res: Response) => {
+  try {
+    const { name, icon } = req.body;
+    const userId = getUserIdFromReq(req);
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+
+    const category = await IncomeCategory.create({ name, icon, userId });
+    res.status(201).json({ success: true, data: category });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to create income category', error });
+  }
+};
+
+export const updateIncomeCategory = async (req: Request, res: Response) => {
+  try {
+    const categoryId = req.params.id;
+    const { name, icon } = req.body;
+    const userId = getUserIdFromReq(req);
+
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    if (!mongoose.Types.ObjectId.isValid(categoryId))
+      return res.status(400).json({ success: false, message: 'Invalid category id' });
+
+    const updated = await IncomeCategory.findOneAndUpdate(
+      { _id: categoryId, userId },
+      { name, icon },
+      { new: true }
+    );
+
+    if (!updated)
+      return res.status(404).json({ success: false, message: 'Category not found or unauthorized' });
+
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update income category', error });
+  }
+};
+
+export const getIncomeCategories = async (req: Request, res: Response) => {
+  try {
+    const userId = getUserIdFromReq(req);
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const categories = await IncomeCategory.find({
+      $or: [{ userId: null }, { userId }],
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json({ success: true, data: categories });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch income categories', error });
   }
 };
