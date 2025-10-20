@@ -19,10 +19,7 @@ router.route('/').post(createIncome).get(getAllIncomes);
 router.route('/:id').patch(updateIncome).delete(deleteIncome);
 router.route('/summary').get(getMonthlyIncomeSummary);
 
-router
-  .route('/income-categories')
-  .get(getIncomeCategories)
-  .post(createIncomeCategory);
+router.route('/categories').get(getIncomeCategories).post(createIncomeCategory);
 
 router.route('/categories/:id').patch(updateIncomeCategory);
 
