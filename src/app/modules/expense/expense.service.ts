@@ -8,28 +8,24 @@ export const createExpense = async (
   userId: string,
   data: Partial<IExpense>
 ): Promise<IExpense> => {
-  // Determine the date for the expense (use data.date or current date)
-
   const dateObj =
     data && typeof data.createdAt === 'string'
       ? new Date(data.createdAt)
       : new Date();
+
   const year = dateObj.getFullYear();
   const month = String(dateObj.getMonth() + 1).padStart(2, '0');
 
-  // Always cast category to ObjectId for consistency
-  let categoryObj = data.category;
-  if (categoryObj && typeof categoryObj === 'string') {
-    categoryObj = new Types.ObjectId(categoryObj);
-  }
-  console.log(
-    'Saving expense with category:',
-    categoryObj,
-    'type:',
-    typeof categoryObj
-  );
-  await notifyOnBudgetThreshold(userId.toString(), `${year}-${month}`);
-  return Expense.create({ ...data, userId, category: categoryObj });
+  const expense = await Expense.create({
+    ...data,
+    userId: new Types.ObjectId(userId), // ✅ ensure ObjectId for DB
+    date: data.date || dateObj,
+    month: data.month || `${year}-${month}`,
+  });
+
+  await notifyOnBudgetThreshold(userId, `${year}-${month}`); // ✅ notify expects string
+
+  return expense;
 };
 
 export const getExpensesByUser = (userId: Types.ObjectId) => {

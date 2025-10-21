@@ -3,7 +3,8 @@ import { Types } from 'mongoose';
 export type IExpense = {
   userId: Types.ObjectId;
   amount: number;
-  category: string;
-  note?: string;
+  source: string;
+  date?: Date;
+  month: string;
   createdAt: Date;
 }

@@ -9,40 +9,39 @@ import expenseModel, { ExpenseCategory } from './expense.model';
 export const createExpense = async (req: Request, res: Response) => {
   try {
     if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    const userId = req.user.id;
-    const data = req.body;
-
-    // Validate category ObjectId
-    if (!data.category || !isValidObjectId(data.category)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const catObj = new Types.ObjectId(data.category);
+    const userId = req.user.id; // keep string here for function params
+    const { source, amount, month } = req.body;
+    const now = new Date();
 
-    // Check if category exists and is accessible by the user
-    const category = await Category.findOne({ _id: catObj });
-
-    if (
-      !category ||
-      (category.userId && category.userId.toString() !== userId.toString())
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Category not found or not accessible' });
-    }
-
-    // Create expense, ensure category is ObjectId
     const expense = await expenseService.createExpense(userId, {
-      ...data,
-      category: catObj,
+      userId: new Types.ObjectId(userId), // ✅ Mongoose expects ObjectId
+      source,
+      amount: Number(amount),
+      date: now,
+      month:
+        month ||
+        `${now.getFullYear()}-${(now.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`,
     });
-    return res.status(201).json(expense);
+
+    return res.status(201).json({
+      success: true,
+      data: expense,
+    });
   } catch (error) {
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error('Error creating expense:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
   }
 };
+
+
 
 export const getExpenses = async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {

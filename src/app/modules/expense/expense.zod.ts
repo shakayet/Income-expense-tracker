@@ -6,7 +6,7 @@ import z from "zod";
 export const createExpenseZodSchema = z.object({
   body: z.object({
     amount: z.number(),
-    category: z.string(),
+    source: z.string(),
     note: z.string().optional(),
   }),
 });

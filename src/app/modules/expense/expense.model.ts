@@ -4,8 +4,8 @@ import { IExpense } from './expense.interface';
 const ExpenseSchema: Schema = new Schema<IExpense>({
   userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   amount: { type: Number, required: true },
-  category: { type: String, required: true },
-  note: { type: String },
+  source: { type: String, required: true },
+  month: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 
