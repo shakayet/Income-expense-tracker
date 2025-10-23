@@ -1,6 +1,6 @@
 export const extractDataFromRawText = (
   rawText: string
-): { amount?: number; category?: string } => {
+): { amount?: number; source?: string } => {
   const text = rawText.toLowerCase();
 
   // Match all monetary values (e.g., 12, 12.50, 1.200,00)
@@ -134,6 +134,6 @@ export const extractDataFromRawText = (
 
   return {
     amount,
-    category,
+    source: category,
   };
 };

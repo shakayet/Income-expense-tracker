@@ -16,9 +16,9 @@ export const uploadTextAndExtractExpense = catchAsync(
       });
     }
 
-    const { amount, category } = extractDataFromRawText(rawText);
+    const { amount, source } = extractDataFromRawText(rawText);
 
-    if (!amount || !category) {
+    if (!amount || !source) {
       return res.status(httpStatus.BAD_REQUEST).json({
         success: false,
         message: 'Failed to extract amount or category from raw text',
@@ -27,7 +27,7 @@ export const uploadTextAndExtractExpense = catchAsync(
 
     const expensePayload = {
       amount,
-      category,
+      source,
       note: 'Created from OCR text',
     };
 
