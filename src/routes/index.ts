@@ -20,6 +20,7 @@ import { NotificationRoutes } from '../app/modules/notification/notification.rou
 import { MarketplaceRoutes } from '../app/modules/marketplace/marketplace.route';
 import { MarketplacecredentialRoutes } from '../app/modules/marketplacecredential/marketplacecredential.route';
 import { SavingsRoutes } from '../app/modules/savings/savings.route';
+import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inapp.route';
 // import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
 
 // import express from 'express';
@@ -47,10 +48,6 @@ const apiRoutes = [
     path: '/user',
     route: UserRoutes,
   },
-  // {
-  //   path: '/in-app-purchase',
-  //   route: InAppPurchaseRoutes,
-  // },
   {
     path: '/auth',
     route: AuthRoutes,
@@ -122,11 +119,11 @@ const apiRoutes = [
   {
     path: '/savings',
     route: SavingsRoutes,
+  },
+  {
+    path: '/payment',
+    route: InAppPurchaseRoutes,
   }
-  // {
-  //   path: '/in-app-purchase',
-  //   route: InAppPurchaseRoutes,
-  // }
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
