@@ -8,7 +8,7 @@ const router = express.Router();
 router
   .route('/')
   .post(auth(USER_ROLES.USER), InAppPurchaseController.createPurchase)
-  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), InAppPurchaseController.getAllPurchases);
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER), InAppPurchaseController.getAllPurchases); //single user all purchases
 
 router
   .route('/:id')
