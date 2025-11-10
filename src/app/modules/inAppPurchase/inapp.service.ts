@@ -6,18 +6,18 @@ const createPurchaseInDB = async (payload: IInAppPurchase) => {
   return result;
 };
 
-const getAllPurchasesFromDB = async () => {
-  const result = await InAppPurchase.find().populate('user');
+const getAllPurchasesFromDB = async (userId: string) => {
+  const result = await InAppPurchase.find({ user: userId }).populate('user');
   return result;
 };
 
-const getSinglePurchaseFromDB = async (id: string) => {
-  const result = await InAppPurchase.findById(id).populate('user');
+const getSinglePurchaseFromDB = async (id: string, userId: string) => {
+  const result = await InAppPurchase.findOne({ _id: id, user: userId }).populate('user');
   return result;
 };
 
-const deletePurchaseFromDB = async (id: string) => {
-  const result = await InAppPurchase.findByIdAndDelete(id);
+const deletePurchaseFromDB = async (id: string, userId: string) => {
+  const result = await InAppPurchase.findOneAndDelete({ _id: id, user: userId });
   return result;
 };
 

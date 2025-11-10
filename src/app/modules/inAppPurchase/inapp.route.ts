@@ -1,16 +1,18 @@
 import express from 'express';
 import { InAppPurchaseController } from './inApp.controller';
+import auth from '../../middlewares/auth';
+import { USER_ROLES } from '../../../enums/user';
 
 const router = express.Router();
 
 router
   .route('/')
-  .post(InAppPurchaseController.createPurchase)
-  .get(InAppPurchaseController.getAllPurchases);
+  .post(auth(USER_ROLES.USER), InAppPurchaseController.createPurchase)
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), InAppPurchaseController.getAllPurchases);
 
 router
   .route('/:id')
-  .get(InAppPurchaseController.getSinglePurchase)
-  .delete(InAppPurchaseController.deletePurchase);
+  .get(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),InAppPurchaseController.getSinglePurchase)
+  .delete(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), InAppPurchaseController.deletePurchase);
 
 export const InAppPurchaseRoutes = router;
