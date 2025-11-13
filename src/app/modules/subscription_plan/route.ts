@@ -13,15 +13,13 @@ router.post(
 );
 router.get(
   '/',
-  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
   subscriptionPlanController.getAllSubscriptionPlans
 );
 router.get(
   '/:id',
-  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
   subscriptionPlanController.getSubscriptionPlanById
 );
-router.put(
+router.patch(
   '/:id',
   auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
   subscriptionPlanController.updateSubscriptionPlan
