@@ -1,5 +1,5 @@
 import express from 'express';
-import { InAppPurchaseController } from './inApp.controller';
+import { InAppPurchaseController } from './inapp.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
 
