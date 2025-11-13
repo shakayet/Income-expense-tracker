@@ -21,25 +21,8 @@ import { MarketplaceRoutes } from '../app/modules/marketplace/marketplace.route'
 import { MarketplacecredentialRoutes } from '../app/modules/marketplacecredential/marketplacecredential.route';
 import { SavingsRoutes } from '../app/modules/savings/savings.route';
 import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inapp.route';
-// import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inAppPurchase.route';
+import { SubscriptionPlan } from '../app/modules/subscription_plan/route';
 
-// import express from 'express';
-// import { AuthRoutes } from '../app/modules/auth/auth.route';
-// import { UserRoutes } from '../app/modules/user/user.route';
-// import { ExpenseRoutes } from '../app/modules/expense/expense.route';
-// import { IncomeRoutes } from '../app/modules/income/income.route';
-// import { BudgetRoutes } from '../app/modules/budget/budget.route';
-// import { ReportRoutes } from '../app/modules/reports/report.route';
-// // import path from 'path';
-// // import { NotificationRoutes } from '../app/modules/notification/notification.route';
-// import { PlanRoutes } from '../app/modules/plan/plan.routes';
-// import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
-// import { CategoryRoutes } from '../app/modules/category/category.route';
-// import comparePriceRoutes from '../app/modules/price-compare/compare.route';
-// import { TermsRoutes } from '../app/modules/terms&conditions/routes';
-// import { ReviewRoutes } from '../app/modules/review/review.route';
-// import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
-// import { stripePayments } from '../stripe/stripeRoute';
 
 const router = express.Router();
 
@@ -123,6 +106,10 @@ const apiRoutes = [
   {
     path: '/payment',
     route: InAppPurchaseRoutes,
+  },
+  {
+    path: '/subscription-plan',
+    route: SubscriptionPlan,
   }
 ];
 
