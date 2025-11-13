@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model, Document } from 'mongoose';
 import { ISubscriptionPlan } from './interface';
 
 const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
@@ -12,6 +12,11 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
       type: String,
       required: true,
       unique: true,
+      maxlength: 100,
+    },
+    // legacy/camelCase field - some older data/indexes use `planId`
+    planId: {
+      type: String,
       maxlength: 100,
     },
     duration_days: {
@@ -36,6 +41,23 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
 // Indexes for better performance
 subscriptionPlanSchema.index({ plan_id: 1 });
 subscriptionPlanSchema.index({ created_at: -1 });
+
+// Keep planId in sync with plan_id to satisfy legacy indexes and migrations
+type PlanDoc = Document & {
+  plan_id?: string;
+  planId?: string;
+};
+
+subscriptionPlanSchema.pre('validate', function (this: PlanDoc, next) {
+  // If one of the fields exists but the other doesn't, copy the value so unique indexes won't see null
+  if (!this.planId && this.plan_id) {
+    this.planId = this.plan_id;
+  }
+  if (!this.plan_id && this.planId) {
+    this.plan_id = this.planId;
+  }
+  next();
+});
 
 export const SubscriptionPlan = model<ISubscriptionPlan>(
   'SubscriptionPlan',
