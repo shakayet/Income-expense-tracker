@@ -6,9 +6,11 @@ const createPurchase = async (req: Request, res: Response) => {
   const user = (req as unknown as { user?: { id?: string; _id?: string } })
     .user;
   const userId = user?.id ?? user?._id;
+  
   const payload = {
     ...req.body,
     user: userId,
+    purchaseDate: new Date(),
   };
 
   const result = await InAppPurchaseService.createPurchaseInDB(payload);
