@@ -208,14 +208,41 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name is required',
+      });
+    }
+
+    // 🔍 Check if category already exists for this user
+    const existingCategory = await ExpenseCategory.findOne({
+      name: { $regex: new RegExp(`^${name}$`, 'i') }, // case-insensitive match
+      userId,
+    });
+
+    if (existingCategory) {
+      return res.status(409).json({
+        success: false,
+        message: 'This expense category already exists.',
+      });
+    }
 
     const category = await ExpenseCategory.create({ name, icon, userId });
-    res.status(201).json({ success: true, data: category });
+
+    res.status(201).json({
+      success: true,
+      data: category,
+    });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create expense category',
+      error,
+    });
   }
 };
+
 
 export const updateExpenseCategory = async (req: Request, res: Response) => {
   try {
