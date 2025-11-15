@@ -119,7 +119,6 @@ async function getAppAccessToken(): Promise<string> {
   ).toString('base64');
 
   
-
   try {
     const res = await axios.post(
       OAUTH_URL,
