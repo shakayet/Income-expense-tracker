@@ -16,7 +16,7 @@ export const getRecentTransactions = async (
     .lean();
 
   const expenses = await ExpenseModel.find({ userId })
-    .select('_id category amount createdAt')
+    .select('_id source amount createdAt')
     .lean();
 
   // Normalize into common structure
@@ -31,12 +31,7 @@ export const getRecentTransactions = async (
     ...expenses.map(e => ({
       _id: e._id.toString(),
       type: 'expense' as const,
-      title:
-        typeof e.category === 'string'
-          ? e.category
-          : e.category
-          ? String(e.category)
-          : '',
+      title: typeof e.source === 'string' ? e.source : String(e.source),
       amount: e.amount,
       createdAt:
         e.createdAt instanceof Date ? e.createdAt : new Date(e.createdAt),
