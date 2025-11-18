@@ -18,16 +18,24 @@ const auth =
       if (tokenWithBearer && tokenWithBearer.startsWith('Bearer')) {
         const token = tokenWithBearer.split(' ')[1];
 
-        //verify token
+        // verify token
         const verifyUser = jwtHelper.verifyToken(
           token,
           config.jwt.jwt_secret as Secret
         );
-        //set user to header
-        req.user = verifyUser;
 
-        //guard user
-        if (roles.length && !roles.includes(verifyUser.role)) {
+        // Normalize payload: jwt.verify can return string | JwtPayload
+        const payload = verifyUser as unknown as {
+          id?: string;
+          _id?: string;
+          role?: string;
+        };
+
+        // set user to request (only keep id for request.user as defined in global.d.ts)
+        req.user = { id: payload.id ?? payload._id };
+
+        // guard by role if provided
+        if (roles.length && payload.role && !roles.includes(payload.role)) {
           throw new ApiError(
             StatusCodes.FORBIDDEN,
             "You don't have permission to access this api"

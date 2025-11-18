@@ -23,8 +23,8 @@ export const getMonthlyReport = async (userId: string, month: string) => {
   for (const i of incomes)
     incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
   for (const e of expenses) {
-    const catKey =
-      typeof e.category === 'string' ? e.category : e.category?.toString();
+    // Expense model uses `source` for the category/source field
+    const catKey = e.source ? String(e.source) : 'unknown';
     expenseByCategory[catKey] = (expenseByCategory[catKey] || 0) + e.amount;
   }
 
@@ -91,8 +91,8 @@ export const getYearlyReport = async (userId: string, year: string) => {
   for (const i of incomeDocs)
     incomeByCategory[i.source] = (incomeByCategory[i.source] || 0) + i.amount;
   for (const e of expenseDocs) {
-    const catKey =
-      typeof e.category === 'string' ? e.category : e.category?.toString();
+    // Expense model uses `source` for the category/source field
+    const catKey = e.source ? String(e.source) : 'unknown';
     expenseByCategory[catKey] = (expenseByCategory[catKey] || 0) + e.amount;
   }
 
