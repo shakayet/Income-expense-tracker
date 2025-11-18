@@ -51,10 +51,15 @@ const loginUserFromDB = async (payload: ILoginData) => {
   ) {
     throw new ApiError(StatusCodes.BAD_REQUEST, 'Password is incorrect!');
   }
-
+  console.log(isExistUser.name);
   //create token
   const createToken = jwtHelper.createToken(
-    { id: isExistUser._id, role: isExistUser.role, email: isExistUser.email },
+    {
+      id: isExistUser._id,
+      role: isExistUser.role,
+      email: isExistUser.email,
+      name: isExistUser.name,
+    },
     config.jwt.jwt_secret as Secret,
     config.jwt.jwt_expire_in as string
   );

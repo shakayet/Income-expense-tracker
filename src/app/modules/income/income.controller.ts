@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response } from 'express';
 import { Income, IncomeCategory } from './income.model';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 const getUserIdFromReq = (req: Request): string | null => {
   // supports different shapes where middleware may attach user info
@@ -18,12 +18,10 @@ export const createIncome = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     if (!source || typeof amount === 'undefined') {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: 'Missing required fields: source and amount',
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: source and amount',
+      });
     }
 
     const now = new Date();
@@ -135,18 +133,16 @@ export const getAllIncomes = async (req: Request, res: Response) => {
     // Get total count for pagination info
     const total = await Income.countDocuments(filter);
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: incomes,
-        pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          totalItems: total,
-          itemsPerPage: limitNum,
-        },
-      });
+    res.status(200).json({
+      success: true,
+      data: incomes,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum,
+      },
+    });
   } catch (error) {
     res
       .status(500)
@@ -182,19 +178,17 @@ export const getMonthlyIncomeSummary = async (req: Request, res: Response) => {
       0
     );
 
-    res
-      .status(200)
-      .json({
-        success: true,
-        data: {
-          month,
-          totalIncome,
-          breakdown: summary.map((item: any) => ({
-            source: item._id,
-            amount: item.totalAmount,
-          })),
-        },
-      });
+    res.status(200).json({
+      success: true,
+      data: {
+        month,
+        totalIncome,
+        breakdown: summary.map((item: any) => ({
+          source: item._id,
+          amount: item.totalAmount,
+        })),
+      },
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -210,12 +204,19 @@ export const createIncomeCategory = async (req: Request, res: Response) => {
     const userId = getUserIdFromReq(req);
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    if (!name) return res.status(400).json({ success: false, message: 'Name is required' });
+    if (!name)
+      return res
+        .status(400)
+        .json({ success: false, message: 'Name is required' });
 
     const category = await IncomeCategory.create({ name, icon, userId });
     res.status(201).json({ success: true, data: category });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create income category',
+      error,
+    });
   }
 };
 
@@ -227,7 +228,9 @@ export const updateIncomeCategory = async (req: Request, res: Response) => {
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
     if (!mongoose.Types.ObjectId.isValid(categoryId))
-      return res.status(400).json({ success: false, message: 'Invalid category id' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid category id' });
 
     const updated = await IncomeCategory.findOneAndUpdate(
       { _id: categoryId, userId },
@@ -236,11 +239,18 @@ export const updateIncomeCategory = async (req: Request, res: Response) => {
     );
 
     if (!updated)
-      return res.status(404).json({ success: false, message: 'Category not found or unauthorized' });
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found or unauthorized',
+      });
 
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update income category',
+      error,
+    });
   }
 };
 
@@ -255,7 +265,11 @@ export const getIncomeCategories = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: categories });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch income categories', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch income categories',
+      error,
+    });
   }
 };
 
@@ -286,9 +300,54 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: true, message: 'Income category deleted successfully' });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to delete income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete income category',
+      error,
+    });
   }
 };
 
+export const getMonthlyIncomeSummaryForPdf = async (
+  userId: Types.ObjectId,
+  month?: string
+) => {
+  try {
+    // Auto-detect current month if not provided
+    if (!month || typeof month !== 'string') {
+      const now = new Date();
+      const year = now.getFullYear();
+      const monthNum = (now.getMonth() + 1).toString().padStart(2, '0');
+      month = `${year}-${monthNum}`;
+    }
+
+    // Convert userId to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const summary = await Income.aggregate([
+      { $match: { userId: userObjectId, month } },
+      { $group: { _id: '$source', totalAmount: { $sum: '$amount' } } },
+    ]);
+
+    const totalIncome = summary.reduce(
+      (acc: number, item: any) => acc + (item.totalAmount || 0),
+      0
+    );
+
+    return {
+      data: {
+        month,
+        totalIncome,
+        breakdown: summary.map((item: any) => ({
+          source: item._id,
+          amount: item.totalAmount,
+        })),
+      },
+    };
+  } catch (error) {
+    return {
+      message: 'Failed to fetch monthly income summary',
+      error,
+    };
+  }
+};
