@@ -27,9 +27,9 @@ export function generateReportPDF(
     expenseCategoryPercentage,
   } = reportData;
 
-  // ===========================
+  // ============================
   //           TITLE
-  // ===========================
+  // ============================
   doc
     .fontSize(26)
     .font('Helvetica-Bold')
@@ -46,9 +46,9 @@ export function generateReportPDF(
 
   doc.moveDown(1.2);
 
-  // ===========================
+  // ============================
   //       INFO BOX (LEFT)
-  // ===========================
+  // ============================
   const boxWidth = 260;
   const boxHeight = 100;
   const boxX = 40;
@@ -67,7 +67,7 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(name ?? 'N/A', paddingX + 50, paddingY);
+    .text(name ?? 'N/A', paddingX + 70, paddingY);
 
   doc
     .font('Helvetica-Bold')
@@ -76,7 +76,7 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(email ?? 'N/A', paddingX + 50, paddingY + 25);
+    .text(email ?? 'N/A', paddingX + 70, paddingY + 25);
 
   doc
     .font('Helvetica-Bold')
@@ -85,11 +85,11 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(month, paddingX + 50, paddingY + 50);
+    .text(month, paddingX + 70, paddingY + 50);
 
-  // ---------------------------
-  // SUMMARY BOX (RIGHT SIDE)
-  // ---------------------------
+  // ============================
+  // SUMMARY BOX (RIGHT)
+  // ============================
   const summaryX = 320;
   const summaryY = boxY;
   const summaryWidth = 215;
@@ -108,7 +108,7 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(`$${totalIncome.toLocaleString()}`, sX + 90, sY);
+    .text(`$${totalIncome.toLocaleString()}`, sX + 100, sY);
 
   doc
     .font('Helvetica-Bold')
@@ -117,7 +117,7 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(`$${totalExpense.toLocaleString()}`, sX + 90, sY + 25);
+    .text(`$${totalExpense.toLocaleString()}`, sX + 100, sY + 25);
 
   doc
     .font('Helvetica-Bold')
@@ -126,13 +126,13 @@ export function generateReportPDF(
   doc
     .font('Helvetica')
     .fontSize(12)
-    .text(`$${savings.toLocaleString()}`, sX + 90, sY + 50);
+    .text(`$${Number(savings).toLocaleString()}`, sX + 100, sY + 50);
 
   doc.moveDown(6);
 
-  // ===========================
-  // FUNCTION TO DRAW TABLES
-  // ===========================
+  // ============================
+  //        TABLE MAKER
+  // ============================
   const drawTable = (
     title: string,
     headers: string[],
@@ -146,6 +146,7 @@ export function generateReportPDF(
       .font('Helvetica-Bold')
       .fillColor('#000')
       .text(title, xStart, yStart);
+
     doc.moveDown(0.5);
 
     const rowHeight = 28;
@@ -162,10 +163,10 @@ export function generateReportPDF(
         rowHeight
       )
       .fill('#d3d3d3')
-      .fillColor('#000');
+      .fillColor('#000000');
 
+    // ===== UPDATED: ADD RIGHT PADDING IN HEADERS =====
     headers.forEach((header, i) => {
-      // Vertical centering
       const textY = y + (rowHeight - fontSize) / 2;
       doc
         .fontSize(fontSize)
@@ -177,7 +178,7 @@ export function generateReportPDF(
             (i > 0 ? colWidths.slice(0, i).reduce((a, b) => a + b, 0) : 0),
           textY,
           {
-            width: colWidths[i] - 2 * cellPadding,
+            width: colWidths[i] - cellPadding * 3, // ← right padding added
             align: i === 0 ? 'left' : 'right',
           }
         );
@@ -198,21 +199,26 @@ export function generateReportPDF(
           .fillColor('#000');
       }
 
-      headers.forEach((header, i) => {
-        const value =
-          i === 0 ? row.category || 'Other' : row.percentage.toFixed(2);
-        const textY = y + (rowHeight - fontSize) / 2; // vertical center
+      const rowValues = [
+        row.category || 'Other',
+        row.amount ? `$${row.amount.toLocaleString()}` : '-',
+        `${row.percentage?.toFixed(2) ?? 0}%`,
+      ];
+
+      // ===== UPDATED: ADD RIGHT PADDING FOR BODY CELLS =====
+      headers.forEach((_, i) => {
+        const textY = y + (rowHeight - fontSize) / 2;
         doc
           .fontSize(fontSize)
           .font('Helvetica')
           .text(
-            value,
+            rowValues[i],
             xStart +
               cellPadding +
               (i > 0 ? colWidths.slice(0, i).reduce((a, b) => a + b, 0) : 0),
             textY,
             {
-              width: colWidths[i] - 2 * cellPadding,
+              width: colWidths[i] - cellPadding * 3, // ← right padding added
               align: i === 0 ? 'left' : 'right',
             }
           );
@@ -220,7 +226,6 @@ export function generateReportPDF(
 
       y += rowHeight;
 
-      // Horizontal line
       doc
         .moveTo(xStart, y)
         .lineTo(xStart + colWidths.reduce((a, b) => a + b, 0), y)
@@ -228,31 +233,31 @@ export function generateReportPDF(
         .stroke();
     });
 
-    return y + 25; // extra space after table for better separation
+    return y + 25;
   };
 
-  // ===========================
+  // ============================
   // INCOME TABLE
-  // ===========================
+  // ============================
   let nextY = drawTable(
     'Income by Category',
-    ['Category', 'Percentage (%)'],
+    ['Category', 'Amount ($)', 'Percentage (%)'],
     incomeCategoryPercentage,
     40,
     doc.y,
-    [300, 200]
+    [200, 150, 150]
   );
 
-  // ===========================
+  // ============================
   // EXPENSE TABLE
-  // ===========================
+  // ============================
   drawTable(
     'Expense by Category',
-    ['Category', 'Percentage (%)'],
+    ['Category', 'Amount ($)', 'Percentage (%)'],
     expenseCategoryPercentage,
     40,
     nextY,
-    [300, 200]
+    [200, 150, 150]
   );
 
   doc.end();

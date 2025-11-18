@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 
 type CategoryPercentage = {
   category: string;
+  amount: number;
   percentage: number;
 };
 
@@ -24,16 +25,16 @@ export function generateFinanceCSV(report: FinanceReport): string {
   const rows: string[] = [];
 
   // Income breakdown
-  rows.push('Income Category,Percentage');
+  rows.push('Income Category,Income Amount ,Percentage');
   report.incomeCategoryPercentage.forEach(item => {
-    rows.push(`${item.category},${item.percentage}`);
+    rows.push(`${item.category},${item.amount},${item.percentage}`);
   });
   rows.push('');
 
   // Expense breakdown
-  rows.push('Expense Category,Percentage');
+  rows.push('Expense Category,Expense Amount ,Percentage');
   report.expenseCategoryPercentage.forEach(item => {
-    rows.push(`${item.category},${item.percentage}`);
+    rows.push(`${item.category},${item.amount},${item.percentage}`);
   });
   rows.push('');
   rows.push('');
@@ -73,12 +74,12 @@ export async function generateFinanceExcel(
   // -----------------
   // Income Breakdown
   // -----------------
-  worksheet.addRow(['Income Category', 'Percentage']);
+  worksheet.addRow(['Income Category', 'Income Amount', 'Percentage']);
   const incomeHeader = worksheet.lastRow;
   if (incomeHeader) incomeHeader.font = { bold: true };
 
   report.incomeCategoryPercentage.forEach(item => {
-    worksheet.addRow([item.category, item.percentage]);
+    worksheet.addRow([item.category, item.amount, item.percentage]);
   });
 
   worksheet.addRow([]); // empty row
@@ -86,12 +87,12 @@ export async function generateFinanceExcel(
   // -----------------
   // Expense Breakdown
   // -----------------
-  worksheet.addRow(['Expense Category', 'Percentage']);
+  worksheet.addRow(['Expense Category', 'Expense Amount', 'Percentage']);
   const expenseHeader = worksheet.lastRow;
   if (expenseHeader) expenseHeader.font = { bold: true };
 
   report.expenseCategoryPercentage.forEach(item => {
-    worksheet.addRow([item.category, item.percentage]);
+    worksheet.addRow([item.category, item.amount, item.percentage]);
   });
 
   // -----------------
