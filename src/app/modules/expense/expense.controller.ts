@@ -161,13 +161,7 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
 
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    /*
-      Pipeline overview:
-      - Match documents for this user that either have `month` === month OR
-        fall into the date range (date or createdAt) — covers old/new docs.
-      - Lookup category info (allow nulls for uncategorized)
-      - Group by category id (null -> 'uncategorized') and sum amounts
-    */
+    // Simplified pipeline - group by source field directly
     const pipeline: PipelineStage[] = [
       {
         $match: {
@@ -180,66 +174,22 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
         },
       },
       {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryData',
-        },
-      },
-      { $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } },
-      {
         $group: {
-          // Group key: categoryData._id when available, otherwise keep null
-          _id: { $ifNull: ['$categoryData._id', null] },
-          // If lookup succeeded, use that name; otherwise capture the raw category field
-          categoryNameFromLookup: { $first: '$categoryData.name' },
-          rawCategoryField: { $first: '$category' },
-          categoryObjectId: { $first: '$categoryData._id' },
-          totalAmount: { $sum: '$amount' },
-        },
+          _id: '$source', // Group by the source field which contains category
+          totalAmount: { $sum: '$amount' }
+        }
       },
       {
         $project: {
           _id: 0,
-          // Prefer real categoryObjectId -> string, otherwise if rawCategoryField exists use it (covers string names stored on expense), else 'uncategorized'
-          categoryId: {
-            $cond: [
-              { $ifNull: ['$categoryObjectId', false] },
-              { $toString: '$categoryObjectId' },
-              {
-                $cond: [
-                  { $ifNull: ['$rawCategoryField', false] },
-                  { $toString: '$rawCategoryField' },
-                  'uncategorized',
-                ],
-              },
-            ],
-          },
-          categoryName: {
-            $cond: [
-              { $ifNull: ['$categoryNameFromLookup', false] },
-              '$categoryNameFromLookup',
-              {
-                $cond: [
-                  { $ifNull: ['$rawCategoryField', false] },
-                  '$rawCategoryField',
-                  'Uncategorized',
-                ],
-              },
-            ],
-          },
-          totalAmount: 1,
-        },
+          categoryName: '$_id',
+          totalAmount: 1
+        }
       },
-      { $sort: { totalAmount: -1 } },
+      { $sort: { totalAmount: -1 } }
     ];
 
-    const summary = (await expenseModel.aggregate(pipeline)) as Array<{
-      categoryId: string;
-      categoryName: string;
-      totalAmount: number;
-    }>;
+    const summary = await expenseModel.aggregate(pipeline);
 
     const totalExpense = summary.reduce(
       (acc: number, item: { totalAmount: number }) =>
@@ -247,16 +197,21 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
       0
     );
 
+    // Calculate percentage for each category
+    const breakdownWithPercentage = summary.map(item => ({
+      source: item.categoryName,
+      amount: item.totalAmount,
+      percentage: totalExpense > 0 
+        ? Math.round((item.totalAmount / totalExpense) * 100 * 100) / 100 // Rounds to 2 decimal places
+        : 0
+    }));
+
     return res.status(200).json({
       success: true,
       data: {
         month,
         totalExpense,
-        breakdown: summary.map(item => ({
-          categoryId: item.categoryId,
-          categoryName: item.categoryName,
-          amount: item.totalAmount,
-        })),
+        breakdown: breakdownWithPercentage,
       },
     });
   } catch (error) {
