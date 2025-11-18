@@ -42,7 +42,7 @@ router
   .patch(validateRequest(updateMonthlyBudgetZodSchema), updateMonthlyBudget);
 
 router.route('/').post(validateRequest(setBudgetZodSchema), setOrUpdateBudget);
-router.route('/:month').get(getBudgetDetails);
+router.route('/:month').get(getBudgetDetails); //this route
 
 router
   .route('/:month/category')

@@ -682,7 +682,15 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
       // TotalExpense & effective budget
       {
         $addFields: {
-          totalExpense: { $sum: '$categories.spent' },
+          // If categories array exists and has items, sum their spent values;
+          // otherwise fall back to summing the aggregated expensesByCategory totals.
+          totalExpense: {
+            $cond: [
+              { $gt: [{ $size: '$categories' }, 0] },
+              { $sum: '$categories.spent' },
+              { $sum: '$expensesByCategory.totalSpent' },
+            ],
+          },
           // effectiveTotalBudget: {
           //   $cond: [
           //     { $gt: ['$totalBudget', 0] },
@@ -771,12 +779,12 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                 budgetAmount: {
                   $toString: { $round: ['$$cat.budgetAmount', 2] },
                 },
-                // spent: { $toString: { $round: ['$$cat.spent', 2] } },
+                spent: { $toString: { $round: ['$$cat.spent', 2] } },
                 remaining: { $toString: { $round: ['$$cat.remaining', 2] } },
                 percentageUsed: {
                   $toString: { $round: ['$$cat.percentageUsed', 2] },
                 },
-                // status: '$$cat.status',
+                status: '$$cat.status',
               },
             },
           },
@@ -876,12 +884,10 @@ export const getSimpleBudgetDetails = async (req: Request, res: Response) => {
     ]);
 
     if (!budgetResult || budgetResult.length === 0) {
-      return res
-        .status(404)
-        .json({
-          success: false,
-          message: 'Budget not found for the specified month',
-        });
+      return res.status(404).json({
+        success: false,
+        message: 'Budget not found for the specified month',
+      });
     }
 
     // Simplify the response to only include month and amount
@@ -911,21 +917,17 @@ export const postSimpleBudgetDetails = async (req: Request, res: Response) => {
     }
 
     if (!month || amount === undefined) {
-      return res
-        .status(400)
-        .json({ 
-          success: false, 
-          message: 'Month and amount parameters are required' 
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Month and amount parameters are required',
+      });
     }
 
     if (typeof amount !== 'number' || amount < 0) {
-      return res
-        .status(400)
-        .json({ 
-          success: false, 
-          message: 'Amount must be a positive number' 
-        });
+      return res.status(400).json({
+        success: false,
+        message: 'Amount must be a positive number',
+      });
     }
 
     const userIdObj = new mongoose.Types.ObjectId(userId);
@@ -933,50 +935,51 @@ export const postSimpleBudgetDetails = async (req: Request, res: Response) => {
     // Find and update the budget, or create if it doesn't exist
     const budget = await Budget.findOneAndUpdate(
       { userId: userIdObj, month },
-      { 
-        $set: { 
+      {
+        $set: {
           totalBudget: amount,
           month,
-          userId: userIdObj
-        }
+          userId: userIdObj,
+        },
       },
-      { 
+      {
         upsert: true, // Create if doesn't exist
         new: true, // Return the updated document
-        runValidators: true 
+        runValidators: true,
       }
     );
 
-    return res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       message: 'Budget saved successfully',
       data: {
         month: budget.month,
-        amount: budget.totalBudget
-      }
+        amount: budget.totalBudget,
+      },
     });
   } catch (error: any) {
     console.error('Error in postSimpleBudgetDetails:', error);
-    
+
     // Handle duplicate key errors or validation errors
     if (error instanceof mongoose.Error.ValidationError) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Validation error', 
-        error: error.message 
-      });
-    }
-    
-    if (error.code === 11000) { // MongoDB duplicate key error
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Budget already exists for this month' 
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        error: error.message,
       });
     }
 
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Server Error' 
+    if (error.code === 11000) {
+      // MongoDB duplicate key error
+      return res.status(400).json({
+        success: false,
+        message: 'Budget already exists for this month',
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server Error',
     });
   }
 };
