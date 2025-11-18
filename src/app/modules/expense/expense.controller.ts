@@ -2,7 +2,8 @@
 import { Request, Response } from 'express';
 import * as expenseService from './expense.service';
 import { expenseUpdateSchema } from './expense.zod';
-import mongoose, { Types, isValidObjectId } from 'mongoose';
+import mongoose, { Types, isValidObjectId, PipelineStage } from 'mongoose';
+import type { IExpense } from './expense.interface';
 import { Category } from '../category/category.model';
 import expenseModel, { ExpenseCategory } from './expense.model';
 
@@ -40,8 +41,6 @@ export const createExpense = async (req: Request, res: Response) => {
     });
   }
 };
-
-
 
 export const getExpenses = async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
@@ -85,7 +84,15 @@ export const updateExpense = async (req: Request, res: Response) => {
     }
   }
 
-  const expense = await expenseService.updateExpense(id, userId, updateData);
+  // Convert category id string to ObjectId for the service layer
+  const updatePayload: Partial<IExpense> = {
+    ...updateData,
+    category: updateData.category
+      ? new Types.ObjectId(updateData.category)
+      : undefined,
+  };
+
+  const expense = await expenseService.updateExpense(id, userId, updatePayload);
   if (!expense) return res.status(404).json({ message: 'Expense not found' });
   res.json(expense);
 };
@@ -126,7 +133,10 @@ export const getExpense = async (req: Request, res: Response) => {
 export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
   try {
     const userId = (req.user as { id?: string } | undefined)?.id;
-    let { month } = req.query;
+    // Prefer month from params (as requested), fallback to query
+    const monthParam = (req.params as Record<string, string> | undefined)
+      ?.month;
+    let month = monthParam ?? (req.query.month as string | undefined);
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
@@ -138,63 +148,120 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
       month = `${year}-${monthNum}`;
     }
 
-    const [year, monthNum] = (month as string).split('-').map(Number);
+    // Validate month format YYYY-MM
+    if (typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid month format. Use YYYY-MM' });
+    }
 
+    const [year, monthNum] = (month as string).split('-').map(Number);
     const startDate = new Date(year, monthNum - 1, 1);
     const endDate = new Date(year, monthNum, 1);
 
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const summary = await expenseModel.aggregate([
+    /*
+      Pipeline overview:
+      - Match documents for this user that either have `month` === month OR
+        fall into the date range (date or createdAt) — covers old/new docs.
+      - Lookup category info (allow nulls for uncategorized)
+      - Group by category id (null -> 'uncategorized') and sum amounts
+    */
+    const pipeline: PipelineStage[] = [
       {
         $match: {
           userId: userObjectId,
-          createdAt: { $gte: startDate, $lt: endDate },
+          $or: [
+            { month: month },
+            { date: { $gte: startDate, $lt: endDate } },
+            { createdAt: { $gte: startDate, $lt: endDate } },
+          ],
         },
       },
       {
         $lookup: {
-          from: 'categories', // name of your categories collection
+          from: 'categories',
           localField: 'category',
           foreignField: '_id',
           as: 'categoryData',
         },
       },
-      { $unwind: '$categoryData' },
+      { $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } },
       {
         $group: {
-          _id: '$categoryData._id',
-          categoryName: { $first: '$categoryData.name' },
+          // Group key: categoryData._id when available, otherwise keep null
+          _id: { $ifNull: ['$categoryData._id', null] },
+          // If lookup succeeded, use that name; otherwise capture the raw category field
+          categoryNameFromLookup: { $first: '$categoryData.name' },
+          rawCategoryField: { $first: '$category' },
+          categoryObjectId: { $first: '$categoryData._id' },
           totalAmount: { $sum: '$amount' },
         },
       },
       {
         $project: {
           _id: 0,
-          categoryId: '$_id',
-          categoryName: 1,
+          // Prefer real categoryObjectId -> string, otherwise if rawCategoryField exists use it (covers string names stored on expense), else 'uncategorized'
+          categoryId: {
+            $cond: [
+              { $ifNull: ['$categoryObjectId', false] },
+              { $toString: '$categoryObjectId' },
+              {
+                $cond: [
+                  { $ifNull: ['$rawCategoryField', false] },
+                  { $toString: '$rawCategoryField' },
+                  'uncategorized',
+                ],
+              },
+            ],
+          },
+          categoryName: {
+            $cond: [
+              { $ifNull: ['$categoryNameFromLookup', false] },
+              '$categoryNameFromLookup',
+              {
+                $cond: [
+                  { $ifNull: ['$rawCategoryField', false] },
+                  '$rawCategoryField',
+                  'Uncategorized',
+                ],
+              },
+            ],
+          },
           totalAmount: 1,
         },
       },
-    ]);
+      { $sort: { totalAmount: -1 } },
+    ];
 
-    const totalExpense = summary.reduce((acc: number, item: { totalAmount: number }) => acc + item.totalAmount, 0);
+    const summary = (await expenseModel.aggregate(pipeline)) as Array<{
+      categoryId: string;
+      categoryName: string;
+      totalAmount: number;
+    }>;
 
-    res.status(200).json({
+    const totalExpense = summary.reduce(
+      (acc: number, item: { totalAmount: number }) =>
+        acc + (item.totalAmount || 0),
+      0
+    );
+
+    return res.status(200).json({
       success: true,
       data: {
         month,
         totalExpense,
         breakdown: summary.map(item => ({
-          // categoryId: item.categoryId,
+          categoryId: item.categoryId,
           categoryName: item.categoryName,
           amount: item.totalAmount,
         })),
       },
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
+    console.error('getMonthlyExpenseSummary error:', error);
+    return res.status(500).json({
       success: false,
       message: 'Failed to fetch monthly expense summary',
       error,
@@ -243,7 +310,6 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
   }
 };
 
-
 export const updateExpenseCategory = async (req: Request, res: Response) => {
   try {
     const categoryId = req.params.id;
@@ -252,7 +318,9 @@ export const updateExpenseCategory = async (req: Request, res: Response) => {
 
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
     if (!mongoose.Types.ObjectId.isValid(categoryId))
-      return res.status(400).json({ success: false, message: 'Invalid category id' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Invalid category id' });
 
     const updated = await ExpenseCategory.findOneAndUpdate(
       { _id: categoryId, userId },
@@ -261,11 +329,18 @@ export const updateExpenseCategory = async (req: Request, res: Response) => {
     );
 
     if (!updated)
-      return res.status(404).json({ success: false, message: 'Category not found or unauthorized' });
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found or unauthorized',
+      });
 
     res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to update income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update income category',
+      error,
+    });
   }
 };
 
@@ -280,7 +355,11 @@ export const getExpenseCategories = async (req: Request, res: Response) => {
 
     res.status(200).json({ success: true, data: categories });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to fetch expense categories', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch expense categories',
+      error,
+    });
   }
 };
 
@@ -310,10 +389,10 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: true, message: 'Income category deleted successfully' });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to delete income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete income category',
+      error,
+    });
   }
 };
-
-
