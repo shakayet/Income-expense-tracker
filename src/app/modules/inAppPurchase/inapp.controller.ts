@@ -6,6 +6,7 @@ import {
   deletePurchaseFromDB,
   checkPremiumStatus as checkPremiumStatusService,
   getUserPurchases as getUserPurchasesService,
+  getAnyUserPurchaseHistoryForAdmin,
   PremiumStatusResponse,
 } from './inapp.service';
 import { IInAppPurchase } from './inapp.interface';
@@ -125,6 +126,36 @@ export async function getUserPurchaseHistory(req: Request, res: Response) {
   }
 }
 
+/**
+ * Admin/Super Admin endpoint to view purchase history for a specific user.
+ * Route: GET /admin/users/:userId/purchase-history
+ * Auth: ADMIN, SUPER_ADMIN
+ */
+export async function getAdminUserPurchaseHistory(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+
+    if (!userId)
+      return res
+        .status(400)
+        .json({ success: false, message: 'userId is required' });
+
+    const purchases = await getAnyUserPurchaseHistoryForAdmin(userId);
+
+    res.status(200).json({
+      success: true,
+      message: `Purchase history for user ${userId}`,
+      data: purchases,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching user purchase history',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
 export const InAppPurchaseController = {
   createPurchase,
   getAllPurchases,
@@ -132,4 +163,5 @@ export const InAppPurchaseController = {
   deletePurchase,
   checkPremiumStatus,
   getUserPurchaseHistory,
+  getAdminUserPurchaseHistory,
 };

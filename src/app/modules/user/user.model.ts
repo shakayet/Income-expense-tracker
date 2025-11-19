@@ -51,6 +51,7 @@ const userSchema = new Schema<IUser, UserModal>(
     },
     fcmToken: {
       type: String,
+      required: true,
     },
     pin: {
       type: String,

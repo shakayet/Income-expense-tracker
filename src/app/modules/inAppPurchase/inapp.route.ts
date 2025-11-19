@@ -6,6 +6,7 @@ import {
   deletePurchase,
   checkPremiumStatus,
   getUserPurchaseHistory,
+  getAdminUserPurchaseHistory,
 } from './inapp.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
@@ -18,11 +19,19 @@ router
   .get(
     auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.USER),
     getAllPurchases
-  ); 
+  );
 
-router.get('/premium-status', auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), checkPremiumStatus);
+router.get(
+  '/premium-status',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  checkPremiumStatus
+);
 
-router.get('/purchase-history', auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), getUserPurchaseHistory);
+router.get(
+  '/purchase-history',
+  auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  getUserPurchaseHistory
+);
 
 router
   .route('/:id')
@@ -31,5 +40,15 @@ router
     getSinglePurchase
   )
   .delete(auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), deletePurchase);
+
+/**
+ * Admin route: GET /admin/users/:userId/purchase-history
+ * Allows ADMIN and SUPER_ADMIN to view purchase history for any user
+ */
+router.get(
+  '/admin/users/:userId/purchase-history',
+  auth(USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
+  getAdminUserPurchaseHistory
+);
 
 export const InAppPurchaseRoutes = router;

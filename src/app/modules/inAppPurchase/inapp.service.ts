@@ -96,3 +96,18 @@ export async function getUserPurchases(
     .sort({ purchaseDate: -1 })
     .lean();
 }
+
+/**
+ * Admin endpoint: get purchase history for any user by their userId.
+ * Used by admins to view a specific user's purchase history.
+ */
+export async function getAnyUserPurchaseHistoryForAdmin(
+  targetUserId: string
+): Promise<IInAppPurchase[]> {
+  return await InAppPurchase.find({
+    user: new Types.ObjectId(targetUserId),
+  })
+    .populate('user', 'id email')
+    .sort({ purchaseDate: -1 })
+    .lean();
+}
