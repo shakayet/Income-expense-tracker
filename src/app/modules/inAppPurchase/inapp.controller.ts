@@ -32,7 +32,7 @@ export const createPurchase = async (req: Request, res: Response) => {
     purchaseDate: new Date(),
   };
 
-  const result = await createPurchaseInDB(payload as IInAppPurchase);
+  const result = await createPurchaseInDB(payload as IInAppPurchase, userId);
   res.status(201).json({
     success: true,
     message: 'In-app purchase recorded successfully',

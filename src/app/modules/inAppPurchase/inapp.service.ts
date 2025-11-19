@@ -1,14 +1,21 @@
 import { InAppPurchase } from './inapp.model';
 import { IInAppPurchase } from './inapp.interface';
 import { Types } from 'mongoose';
+import { User } from '../user/user.model';
 
 export type PremiumStatusResponse = {
   isPremium: boolean;
   daysLeft?: number;
 };
 
-export const createPurchaseInDB = async (payload: IInAppPurchase) => {
+export const createPurchaseInDB = async (payload: IInAppPurchase, userId: string) => {
   const result = await InAppPurchase.create(payload);
+  await User.findByIdAndUpdate(
+    userId,
+    { currentSubscription: result._id },
+    { new: true }
+  );
+  
   return result;
 };
 
