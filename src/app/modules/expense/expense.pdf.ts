@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 export function generateExpensePDF(
   reportData: any,
@@ -8,7 +8,6 @@ export function generateExpensePDF(
   name: string | undefined
 ) {
   const doc = new PDFDocument({ margin: 50, size: 'A4' });
-
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader(
     'Content-Disposition',
@@ -106,7 +105,7 @@ export function generateExpensePDF(
     .fontSize(14)
     .font('Helvetica-Bold')
     .fillColor('black')
-    .text('Category', itemX + categoryPaddingLeft, tableTop + verticalOffset, {
+    .text('Source', itemX + categoryPaddingLeft, tableTop + verticalOffset, {
       width: tableWidth - amountColumnWidth - categoryPaddingLeft * 2,
     })
     .text('Amount ($)', amountX, tableTop + verticalOffset, {
@@ -134,7 +133,7 @@ export function generateExpensePDF(
     doc
       .fontSize(fontSize)
       .font('Helvetica')
-      .text(item.categoryName, itemX + categoryPaddingLeft, textY)
+      .text(item.source, itemX + categoryPaddingLeft, textY)
       .text(item.amount.toFixed(2), amountX, textY, {
         width: amountColumnWidth - 20,
         align: 'right',

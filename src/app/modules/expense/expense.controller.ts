@@ -87,9 +87,7 @@ export const updateExpense = async (req: Request, res: Response) => {
   // Convert category id string to ObjectId for the service layer
   const updatePayload: Partial<IExpense> = {
     ...updateData,
-    category: updateData.category
-      ? updateData.category
-      : undefined,
+    category: updateData.category ? updateData.category : undefined,
   };
 
   const expense = await expenseService.updateExpense(id, userId, updatePayload);
@@ -176,17 +174,17 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
       {
         $group: {
           _id: '$source', // Group by the source field which contains category
-          totalAmount: { $sum: '$amount' }
-        }
+          totalAmount: { $sum: '$amount' },
+        },
       },
       {
         $project: {
           _id: 0,
           categoryName: '$_id',
-          totalAmount: 1
-        }
+          totalAmount: 1,
+        },
       },
-      { $sort: { totalAmount: -1 } }
+      { $sort: { totalAmount: -1 } },
     ];
 
     const summary = await expenseModel.aggregate(pipeline);
@@ -201,9 +199,10 @@ export const getMonthlyExpenseSummary = async (req: Request, res: Response) => {
     const breakdownWithPercentage = summary.map(item => ({
       source: item.categoryName,
       amount: item.totalAmount,
-      percentage: totalExpense > 0 
-        ? Math.round((item.totalAmount / totalExpense) * 100 * 100) / 100 // Rounds to 2 decimal places
-        : 0
+      percentage:
+        totalExpense > 0
+          ? Math.round((item.totalAmount / totalExpense) * 100 * 100) / 100 // Rounds to 2 decimal places
+          : 0,
     }));
 
     return res.status(200).json({
@@ -257,7 +256,11 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
       data: category,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Failed to create income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create income category',
+      error,
+    });
   }
 };
 
@@ -340,81 +343,80 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: true, message: 'Income category deleted successfully' });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: 'Failed to delete income category', error });
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete income category',
+      error,
+    });
   }
 };
-
 
 export const getMonthlyExpenseSummaryForPdf = async (
   userId: Types.ObjectId,
   month?: string
 ) => {
   try {
-    // Default to current month if month not provided
-    if (!month) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const monthNum = (now.getMonth() + 1).toString().padStart(2, '0');
-      month = `${year}-${monthNum}`;
-    }
- 
-    const [year, monthNum] = month.split('-').map(Number);
- 
+    const [year, monthNum] = (month as string).split('-').map(Number);
     const startDate = new Date(year, monthNum - 1, 1);
     const endDate = new Date(year, monthNum, 1);
- 
-    // Aggregate expenses by category
-    const summary = await expenseModel.aggregate([
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Simplified pipeline - group by source field directly
+    const pipeline: PipelineStage[] = [
       {
         $match: {
-          userId,
-          createdAt: { $gte: startDate, $lt: endDate },
+          userId: userObjectId,
+          $or: [
+            { month: month },
+            { date: { $gte: startDate, $lt: endDate } },
+            { createdAt: { $gte: startDate, $lt: endDate } },
+          ],
         },
       },
-      {
-        $lookup: {
-          from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
-          as: 'categoryData',
-        },
-      },
-      { $unwind: '$categoryData' }, // only include expenses with valid category
       {
         $group: {
-          _id: '$categoryData._id',
-          categoryName: { $first: '$categoryData.name' },
-          totalAmount: { $sum: { $toDouble: '$amount' } },
+          _id: '$source', // Group by the source field which contains category
+          totalAmount: { $sum: '$amount' },
         },
       },
       {
         $project: {
           _id: 0,
-          categoryName: 1,
+          categoryName: '$_id',
           totalAmount: 1,
         },
       },
-    ]);
- 
+      { $sort: { totalAmount: -1 } },
+    ];
+
+    const summary = await expenseModel.aggregate(pipeline);
+
     const totalExpense = summary.reduce(
-      (acc, item) => acc + item.totalAmount,
+      (acc: number, item: { totalAmount: number }) =>
+        acc + (item.totalAmount || 0),
       0
     );
- 
+
+    // Calculate percentage for each category
+    const breakdownWithPercentage = summary.map(item => ({
+      source: item.categoryName,
+      amount: item.totalAmount,
+      percentage:
+        totalExpense > 0
+          ? Math.round((item.totalAmount / totalExpense) * 100 * 100) / 100 // Rounds to 2 decimal places
+          : 0,
+    }));
+
     return {
       data: {
         month,
         totalExpense,
-        breakdown: summary.map(item => ({
-          categoryName: item.categoryName,
-          amount: item.totalAmount,
-        })),
+        breakdown: breakdownWithPercentage,
       },
     };
   } catch (error) {
-    console.error(error);
+    console.error('getMonthlyExpenseSummary error:', error);
     return {
       success: false,
       message: 'Failed to fetch monthly expense summary',

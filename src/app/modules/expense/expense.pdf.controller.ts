@@ -37,7 +37,7 @@ export const expensePdfController = async (req: Request, res: Response) => {
     const userId = new Types.ObjectId(req.user.id);
     const email: string | undefined = req.user?.email;
     const name: string | undefined = req.user?.name;
-
+    console.log('data', req.user);
     const reportData = await getMonthlyExpenseSummaryForPdf(
       userId,
       monthString

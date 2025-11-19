@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import ExcelJS from 'exceljs';
 type ExpenseItem = {
-  categoryName: string;
+  source: string;
   amount: number;
 };
 
@@ -22,11 +22,12 @@ export function generateExpenseCSV(
   const { month, totalExpense, breakdown } = reportData.data;
 
   // CSV headers
-  const headers = ['Category', 'Amount'];
+  const headers = ['Source', 'Amount'];
 
   // Map breakdown to CSV rows
-  const rows = breakdown.map(item => `${item.categoryName},${item.amount}`);
+  const rows = breakdown.map(item => `${item.source},${item.amount}`);
 
+  rows.push('');
   // Add total row
   rows.push(`Total,${totalExpense}`);
 
@@ -53,12 +54,12 @@ export async function generateExpenseExcel(
   const worksheet = workbook.addWorksheet('Expense Report');
 
   // Add header row
-  const headerRow = worksheet.addRow(['Category', 'Amount']);
+  const headerRow = worksheet.addRow(['Source', 'Amount']);
   headerRow.font = { bold: true };
 
   // Add data rows
   reportData.breakdown.forEach(item => {
-    worksheet.addRow([item.categoryName, item.amount]);
+    worksheet.addRow([item.source, item.amount]);
   });
 
   // Add total row

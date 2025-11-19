@@ -5,6 +5,6 @@ import { USER_ROLES } from '../../../enums/user';
 
 const router = express.Router();
 
-router.route('/').get(auth(USER_ROLES.USER), recentTransactions);
+router.route('/').get(auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN), recentTransactions);
 
 export const recentTransaction = router;
