@@ -88,7 +88,7 @@ export const updateExpense = async (req: Request, res: Response) => {
   const updatePayload: Partial<IExpense> = {
     ...updateData,
     category: updateData.category
-      ? new Types.ObjectId(updateData.category)
+      ? updateData.category
       : undefined,
   };
 
@@ -257,11 +257,7 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
       data: category,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create expense category',
-      error,
-    });
+    res.status(500).json({ success: false, message: 'Failed to create income category', error });
   }
 };
 
@@ -344,10 +340,8 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: true, message: 'Income category deleted successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete income category',
-      error,
-    });
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to delete income category', error });
   }
 };

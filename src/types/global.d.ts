@@ -4,6 +4,9 @@ declare global {
   namespace Express {
     type UserPayload = {
       id?: string;
+      name?: string;
+      email?: string;
+      role?: string;
       role?: string;
       // Add other user properties if needed
     };

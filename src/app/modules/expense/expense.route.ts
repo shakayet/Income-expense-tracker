@@ -6,6 +6,11 @@ import { createExpenseZodSchema, expenseUpdateSchema } from './expense.zod';
 import { uploadTextAndExtractExpense } from './expense.ocr.controller';
 import { getMonthlyExpenseSummary } from './expense.controller';
 import { USER_ROLES } from '../../../enums/user';
+import { expensePdfController } from './expense.pdf.controller';
+import {
+  expenseCSVController,
+  expenseExcelController,
+} from './expense.csv.excel.controller';
 
 const router = express.Router();
 
@@ -21,8 +26,10 @@ router
 
 router.route('/summary').get(getMonthlyExpenseSummary);
 
-
-router.route('/expense-categories').get(expenseController.getExpenseCategories).post(expenseController.createExpenseCategory);
+router
+  .route('/expense-categories')
+  .get(expenseController.getExpenseCategories)
+  .post(expenseController.createExpenseCategory);
 router.post('/ocr-raw', uploadTextAndExtractExpense);
 
 router
@@ -33,5 +40,8 @@ router
 
 router.route('/categories/:id').patch(expenseController.updateExpenseCategory);
 router.route('/categories/:id').delete(expenseController.deleteIncomeCategory);
+router.route('/generate/pdf').get(expensePdfController);
+router.route('/generate/csv').get(expenseCSVController);
+router.route('/generate/excel').get(expenseExcelController);
 
 export const ExpenseRoutes = router;

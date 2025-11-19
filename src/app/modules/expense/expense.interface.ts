@@ -5,6 +5,7 @@ export type IExpense = {
   amount: number;
   source: string;
   date?: Date;
+  category?: string;
   month: string;
   createdAt: Date;
 };
