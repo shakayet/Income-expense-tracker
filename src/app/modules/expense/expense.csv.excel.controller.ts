@@ -1,3 +1,6 @@
+/* eslint-disable no-console */
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { getMonthlyExpenseSummaryForPdf } from './expense.controller';

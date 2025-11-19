@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
 import { getMonthlyExpenseSummaryForPdf } from './expense.controller';

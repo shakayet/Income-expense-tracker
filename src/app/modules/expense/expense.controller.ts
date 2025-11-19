@@ -345,3 +345,80 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .json({ success: false, message: 'Failed to delete income category', error });
   }
 };
+
+
+export const getMonthlyExpenseSummaryForPdf = async (
+  userId: Types.ObjectId,
+  month?: string
+) => {
+  try {
+    // Default to current month if month not provided
+    if (!month) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const monthNum = (now.getMonth() + 1).toString().padStart(2, '0');
+      month = `${year}-${monthNum}`;
+    }
+ 
+    const [year, monthNum] = month.split('-').map(Number);
+ 
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 1);
+ 
+    // Aggregate expenses by category
+    const summary = await expenseModel.aggregate([
+      {
+        $match: {
+          userId,
+          createdAt: { $gte: startDate, $lt: endDate },
+        },
+      },
+      {
+        $lookup: {
+          from: 'categories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'categoryData',
+        },
+      },
+      { $unwind: '$categoryData' }, // only include expenses with valid category
+      {
+        $group: {
+          _id: '$categoryData._id',
+          categoryName: { $first: '$categoryData.name' },
+          totalAmount: { $sum: { $toDouble: '$amount' } },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          categoryName: 1,
+          totalAmount: 1,
+        },
+      },
+    ]);
+ 
+    const totalExpense = summary.reduce(
+      (acc, item) => acc + item.totalAmount,
+      0
+    );
+ 
+    return {
+      data: {
+        month,
+        totalExpense,
+        breakdown: summary.map(item => ({
+          categoryName: item.categoryName,
+          amount: item.totalAmount,
+        })),
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      success: false,
+      message: 'Failed to fetch monthly expense summary',
+      error,
+    };
+  }
+};
