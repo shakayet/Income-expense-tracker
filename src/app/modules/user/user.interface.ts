@@ -17,6 +17,7 @@ export type IUser = {
   fcmToken?: { type: string } | null;
   userType?: 'pro' | 'free';
   accountStatus?: 'active' | 'ban';
+  currentSubscription?: Types.ObjectId | null;
   authentication?: {
     isResetPassword: boolean;
     oneTimeCode: number;

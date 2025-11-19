@@ -71,6 +71,11 @@ const userSchema = new Schema<IUser, UserModal>(
       enum: ['active', 'ban'],
       default: 'active',
     },
+    currentSubscription: {
+      type: Schema.Types.ObjectId,
+      ref: 'InAppPurchase',
+      default: null,
+    },
     authentication: {
       type: {
         isResetPassword: {
