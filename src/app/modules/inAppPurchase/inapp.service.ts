@@ -12,7 +12,7 @@ export const createPurchaseInDB = async (payload: IInAppPurchase, userId: string
   const result = await InAppPurchase.create(payload);
   await User.findByIdAndUpdate(
     userId,
-    { currentSubscription: result._id },
+    { currentSubscription: result._id, userType: 'pro' },
     { new: true }
   );
   
