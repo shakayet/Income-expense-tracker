@@ -60,7 +60,6 @@ export async function checkPremiumStatus(
       .lean();
 
     if (!latestPurchase) {
-      // Update user to free if no premium purchase found
       await User.findByIdAndUpdate(
         userId,
         {
@@ -75,7 +74,6 @@ export async function checkPremiumStatus(
     const isValid = isSubscriptionValid(latestPurchase as IInAppPurchase);
 
     if (!isValid) {
-      // Update user to free if subscription is no longer valid
       await User.findByIdAndUpdate(
         userId,
         {
@@ -89,7 +87,6 @@ export async function checkPremiumStatus(
 
     const daysLeft = calculateDaysLeft(latestPurchase as IInAppPurchase);
 
-    // Ensure user is set to premium if subscription is valid
     await User.findByIdAndUpdate(
       userId,
       {
@@ -141,10 +138,6 @@ export async function getUserPurchases(
     .lean();
 }
 
-/**
- * Admin endpoint: get purchase history for any user by their userId.
- * Used by admins to view a specific user's purchase history.
- */
 export async function getAnyUserPurchaseHistoryForAdmin(
   targetUserId: string
 ): Promise<IInAppPurchase[]> {
