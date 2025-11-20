@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as NotificationService from './notification.service';
+import { INotification } from './notification.interface';
 import { Notification } from './notification.model';
 import AppError from '../../../errors/ApiError';
 import httpStatus from 'http-status';
@@ -22,18 +23,30 @@ export const markAsRead = async (req: Request, res: Response) => {
 
 // only for creating notifications (temporary)
 
-// export const postNotifications = async (req: Request, res: Response) => {
-//   if (!req.user || !req.user.id) {
-//     return res.status(401).json({ message: 'Unauthorized' });
-//   }
-//   const userId = req.user.id;
-//   // const payLoad = req.body;
+export const postNotifications = async (req: Request, res: Response) => {
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const userId = req.user.id;
+  const payLoad = req.body as Partial<INotification> & {
+    title?: string;
+    message?: string;
+  };
 
-//   const notifications = await NotificationService.createNotification(
-//     userId
-//   );
-//   res.json({ success: true, data: notifications });
-// };
+  // Basic validation: require title and message when creating a notification
+  if (!payLoad || !payLoad.title || !payLoad.message) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'title and message are required' });
+  }
+
+  // createNotification expects (data, userId)
+  const created = await NotificationService.createNotification(
+    payLoad as Partial<INotification> & { title: string; message: string },
+    userId
+  );
+  res.json({ success: true, data: created });
+};
 
 export const getSingleNotification = async (req: Request, res: Response) => {
   const { id } = req.params;
