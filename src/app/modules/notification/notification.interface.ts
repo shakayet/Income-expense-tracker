@@ -12,8 +12,8 @@ export type INotification = {
   message: string;
   reportMonth?: string;
   reportYear?: string;
-  budgetAmount: number;
-  usedAmount: number;
+  budgetAmount?: number;
+  usedAmount?: number;
   isRead?: boolean;
   detailsLink?: string;
   categoryId?: string;

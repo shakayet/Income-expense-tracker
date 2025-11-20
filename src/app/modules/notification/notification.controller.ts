@@ -8,24 +8,36 @@ import sendResponse from '../../../shared/sendResponse';
 
 export const getNotifications = async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized');
   }
   const userId = req.user.id;
   const notifications = await NotificationService.getUserNotifications(userId);
-  res.json({ success: true, data: notifications });
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Notifications retrieved successfully',
+    data: notifications,
+  });
 };
 
 export const markAsRead = async (req: Request, res: Response) => {
   const { id } = req.params;
   const updated = await NotificationService.markNotificationAsRead(id);
-  res.json({ success: true, data: updated });
+  if (!updated) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Notification not found');
+  }
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Notification marked as read',
+    data: updated,
+  });
 };
 
-// only for creating notifications (temporary)
-
+// Create notification (requires title and message)
 export const postNotifications = async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Unauthorized');
   }
   const userId = req.user.id;
   const payLoad = req.body as Partial<INotification> & {
@@ -33,11 +45,12 @@ export const postNotifications = async (req: Request, res: Response) => {
     message?: string;
   };
 
-  // Basic validation: require title and message when creating a notification
+  // Validation: require title and message when creating a notification
   if (!payLoad || !payLoad.title || !payLoad.message) {
-    return res
-      .status(400)
-      .json({ success: false, message: 'title and message are required' });
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Title and message are required'
+    );
   }
 
   // createNotification expects (data, userId)
@@ -45,7 +58,12 @@ export const postNotifications = async (req: Request, res: Response) => {
     payLoad as Partial<INotification> & { title: string; message: string },
     userId
   );
-  res.json({ success: true, data: created });
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: 'Notification created successfully',
+    data: created,
+  });
 };
 
 export const getSingleNotification = async (req: Request, res: Response) => {

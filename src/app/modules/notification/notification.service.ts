@@ -1,11 +1,8 @@
 import { Notification } from './notification.model';
 import { INotification } from './notification.interface';
 import { socketHelper } from '../../../helpers/socketHelper'; // socket instance
-// import { JwtPayload } from 'jsonwebtoken';
-// import { sendMonthlyAndYearlyNotifications } from '../../../util/notificationTrigger';
-// import { checkAndNotifyBudgetUsage } from '../budget/budget.controller';
-// import { sendPushNotification } from '../helpers/push';
 import { sendPushNotification } from '../../../helpers/pushV1';
+import { errorLogger } from '../../../shared/logger';
 
 // GET ALL NOTIFICATIONS FOR USER
 export const getUserNotifications = async (userId: string) => {
@@ -18,61 +15,67 @@ export const createNotification = async (
   data: Partial<INotification> & { title: string; message: string },
   userId: string
 ) => {
-  // console.log('Creating notification for userId:', userId, 'with data:', data);
   const userIdString = userId.toString();
+
+  // Create notification in database
   const created = await Notification.create({ ...data, userId: userIdString });
 
+  // Emit socket event to notify connected clients in real-time
   if (socketHelper.io && userIdString) {
     socketHelper.io.emit(`notification::${userIdString}`, created);
   }
 
-  // Fetch user to get fcmToken
+  // Fetch user to check for fcmToken for push notification
   const user = await User.findById(userIdString);
 
-  // console.log({user})
-
+  // If no FCM token, return early (user not opted in for push)
   if (!user?.fcmToken) {
-    // console.log('No FCM token for user:', userIdString);
     return created;
   }
 
-  if (user && user.fcmToken) {
-    // console.log('User FCM token found, sending push notification...', userIdString);
-    
-    // if (typeof user.fcmToken === 'string') {
-    //   token = user.fcmToken;
-    // } else if (
-    //   user.fcmToken &&
-    //   typeof user.fcmToken === 'object' &&
-    //   'type' in user.fcmToken
-    // ) {
-    //   token = String(user.fcmToken.type);
-    // }
-    if (user.fcmToken) {
-      // Prepare notification data to send in the push `data` field as strings
-      const dataPayload: Record<string, string> = {
-        userId: created.userId.toString(),
-        type: created.type ?? '',
-        title: created.title ?? '',
-        message: created.message ?? '',
-        reportMonth: created.reportMonth ?? '',
-        reportYear: created.reportYear ?? '',
-        notificationId: created._id.toString()
-      };
+  // Extract FCM token (handle both string and object formats)
+  const fcmToken =
+    typeof user.fcmToken === 'string'
+      ? user.fcmToken
+      : user.fcmToken &&
+        typeof user.fcmToken === 'object' &&
+        'type' in user.fcmToken
+      ? String(user.fcmToken.type)
+      : null;
 
-
-      await sendPushNotification({
-        token: typeof user.fcmToken === 'string'
-          ? user.fcmToken
-          : (user.fcmToken && typeof user.fcmToken === 'object' && 'type' in user.fcmToken)
-            ? String(user.fcmToken.type)
-            : '',
-        title: created.title,
-        body: created.message, // must be string
-        data: dataPayload,
-      });
-    }
+  // If token extraction failed, return early
+  if (!fcmToken) {
+    return created;
   }
+
+  try {
+    // Prepare notification data payload (all values must be strings for FCM)
+    const dataPayload: Record<string, string> = {
+      userId: created.userId.toString(),
+      type: created.type ?? '',
+      title: created.title ?? '',
+      message: created.message ?? '',
+      reportMonth: created.reportMonth ?? '',
+      reportYear: created.reportYear ?? '',
+      notificationId: created._id.toString(),
+    };
+
+    // Send push notification via FCM
+    await sendPushNotification({
+      token: fcmToken,
+      title: created.title,
+      body: created.message,
+      data: dataPayload,
+    });
+  } catch (error) {
+    // Log error but don't fail the notification creation
+    errorLogger.error(
+      `Failed to send push notification for user ${userIdString}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+
   return created;
 };
 
