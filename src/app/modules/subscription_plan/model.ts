@@ -39,7 +39,9 @@ const subscriptionPlanSchema = new Schema<ISubscriptionPlan>(
 );
 
 // Indexes for better performance
-subscriptionPlanSchema.index({ plan_id: 1 });
+// `plan_id` is already declared `unique: true` in the schema definition which
+// creates a unique index; avoid creating a duplicate index here.
+// subscriptionPlanSchema.index({ plan_id: 1 }); // duplicate - removed
 subscriptionPlanSchema.index({ created_at: -1 });
 
 // Keep planId in sync with plan_id to satisfy legacy indexes and migrations
