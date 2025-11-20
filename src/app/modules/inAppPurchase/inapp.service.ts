@@ -8,14 +8,17 @@ export type PremiumStatusResponse = {
   daysLeft?: number;
 };
 
-export const createPurchaseInDB = async (payload: IInAppPurchase, userId: string) => {
+export const createPurchaseInDB = async (
+  payload: IInAppPurchase,
+  userId: string
+) => {
   const result = await InAppPurchase.create(payload);
   await User.findByIdAndUpdate(
     userId,
     { currentSubscription: result._id, userType: 'pro' },
     { new: true }
   );
-  
+
   return result;
 };
 
@@ -56,12 +59,46 @@ export async function checkPremiumStatus(
       .sort({ purchaseDate: -1 })
       .lean();
 
-    if (!latestPurchase) return { isPremium: false };
-
-    if (!isSubscriptionValid(latestPurchase as IInAppPurchase))
+    if (!latestPurchase) {
+      // Update user to free if no premium purchase found
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          userType: 'free',
+          currentSubscription: null,
+        },
+        { new: true }
+      );
       return { isPremium: false };
+    }
+
+    const isValid = isSubscriptionValid(latestPurchase as IInAppPurchase);
+
+    if (!isValid) {
+      // Update user to free if subscription is no longer valid
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          userType: 'free',
+          currentSubscription: null,
+        },
+        { new: true }
+      );
+      return { isPremium: false };
+    }
 
     const daysLeft = calculateDaysLeft(latestPurchase as IInAppPurchase);
+
+    // Ensure user is set to premium if subscription is valid
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        userType: 'pro',
+        currentSubscription: latestPurchase._id,
+      },
+      { new: true }
+    );
+
     return { isPremium: true, daysLeft };
   } catch (error) {
     throw new Error(`Error checking premium status: ${error}`);
