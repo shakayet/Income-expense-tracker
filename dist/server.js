@@ -38,7 +38,7 @@ function main() {
             //Seed Super Admin after database connection is successful
             yield (0, seedAdmin_1.seedSuperAdmin)();
             const port = typeof config_1.default.port === 'number' ? config_1.default.port : Number(config_1.default.port);
-            server = app_1.default.listen(port, config_1.default.ip_address, () => {
+            server = app_1.default.listen(port, "0.0.0.0", () => {
                 logger_1.logger.info(colors_1.default.yellow(`♻️  Application listening on port:${config_1.default.port}`));
             });
             //socket

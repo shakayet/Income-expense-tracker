@@ -71,8 +71,9 @@ const resetPassword = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, 
 }));
 const resendOtp = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = req.user;
-        const result = yield auth_service_1.AuthService.resendOtpToDB(user.email);
+        // const user = req.user as JwtPayload;
+        const { email } = req.body;
+        const result = yield auth_service_1.AuthService.resendOtpToDB(email);
         res.status(200).json({ success: true, message: result.message });
     }
     catch (error) {
