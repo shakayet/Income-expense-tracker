@@ -3,6 +3,7 @@ node_modules
 
 /winston
 /uploads
+dist
 # Firebase / GCP credentials
 src/config/serviceAccountKey.json
 config/.serviceAccountKey.temp.json
