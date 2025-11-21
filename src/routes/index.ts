@@ -8,7 +8,7 @@ import { ReportRoutes } from '../app/modules/reports/report.route';
 // import path from 'path';
 // import { NotificationRoutes } from '../app/modules/notification/notification.route';
 // import { PlanRoutes } from '../app/modules/plan/plan.routes';
-import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
+// import { SubscriptionRoutes } from '../app/modules/subscription/subscription.routes';
 import { CategoryRoutes } from '../app/modules/category/category.route';
 import comparePriceRoutes from '../app/modules/price-compare/compare.route';
 import { TermsRoutes } from '../app/modules/terms&conditions/routes';
@@ -59,10 +59,10 @@ const apiRoutes = [
   //   path: '/plan',
   //   route: PlanRoutes,
   // },
-  {
-    path: '/subscription',
-    route: SubscriptionRoutes,
-  },
+  // {
+  //   path: '/subscription',
+  //   route: SubscriptionRoutes,
+  // },
   {
     path: '/category',
     route: CategoryRoutes,
