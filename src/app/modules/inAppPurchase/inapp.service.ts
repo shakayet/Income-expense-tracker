@@ -12,14 +12,34 @@ export const createPurchaseInDB = async (
   payload: IInAppPurchase,
   userId: string
 ) => {
-  const result = await InAppPurchase.create(payload);
-  await User.findByIdAndUpdate(
-    userId,
-    { currentSubscription: result._id, userType: 'pro' },
-    { new: true }
-  );
+  try {
+    // Check if a purchase with the same transactionId already exists
+    const existingPurchase = await InAppPurchase.findOne({
+      transactionId: payload.transactionId,
+    });
 
-  return result;
+    if (existingPurchase) {
+      // If the purchase already exists, return it instead of creating a new one
+      console.log(`Duplicate transaction detected: ${payload.transactionId}`);
+      return `Duplicate transaction detected: ${payload.transactionId}`;
+    }
+
+    // Create a new purchase record
+    const result = await InAppPurchase.create(payload);
+
+    // Update the user's currentSubscription and userType
+    await User.findByIdAndUpdate(
+      userId,
+      { currentSubscription: result._id, userType: 'pro' },
+      { new: true }
+    );
+
+    // Return the newly created purchase record
+    return result;
+  } catch (error) {
+    console.error('Error in creating purchase:', error);
+    throw new Error('Failed to create purchase'); // You can throw or handle this error further
+  }
 };
 
 export const getAllPurchasesFromDB = async (userId: string) => {

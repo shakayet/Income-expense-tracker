@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 import { Request, Response } from 'express';
 import * as expenseService from './expense.service';
 import { expenseUpdateSchema } from './expense.zod';
 import mongoose, { Types, isValidObjectId, PipelineStage } from 'mongoose';
 import type { IExpense } from './expense.interface';
-import { Category } from '../category/category.model';
+// import { Category } from '../category/category.model';
 import expenseModel, { ExpenseCategory } from './expense.model';
 
 export const createExpense = async (req: Request, res: Response) => {
@@ -56,44 +57,47 @@ export const getExpenses = async (req: Request, res: Response) => {
 
 export const updateExpense = async (req: Request, res: Response) => {
   const { id } = req.params;
+
   if (!req.user || !req.user.id) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
-  const userId = new Types.ObjectId(req.user.id);
-  const validated = expenseUpdateSchema.safeParse(req.body);
 
+  const userId = new Types.ObjectId(req.user.id);
+
+  // Validate request body using Zod
+  const validated = expenseUpdateSchema.safeParse(req.body);
   if (!validated.success) {
     return res.status(400).json(validated.error);
   }
 
-  // Optional: Validate category if it's being updated
-  const updateData = validated.data;
-  if (updateData.category) {
-    if (!isValidObjectId(updateData.category)) {
-      return res.status(400).json({ message: 'Invalid category ID' });
-    }
+  const updateData = validated.data as any;
 
-    const category = await Category.findById(updateData.category);
-    if (
-      !category ||
-      (category.userId && category.userId.toString() !== userId.toString())
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Category not found or not accessible' });
-    }
-  }
+  // Since Expense model uses "source", NOT "category", no category validation is needed anymore
 
-  // Convert category id string to ObjectId for the service layer
+  // Prepare payload based on model fields
   const updatePayload: Partial<IExpense> = {
-    ...updateData,
-    category: updateData.category ? updateData.category : undefined,
+    amount: updateData.amount,
+    source: updateData.source,
+    month: updateData.month,
+    date: updateData.date,
   };
 
+  // Remove undefined fields so they don't overwrite existing values
+  Object.keys(updatePayload).forEach((key) => {
+    if (updatePayload[key as keyof IExpense] === undefined) {
+      delete updatePayload[key as keyof IExpense];
+    }
+  });
+
   const expense = await expenseService.updateExpense(id, userId, updatePayload);
-  if (!expense) return res.status(404).json({ message: 'Expense not found' });
-  res.json(expense);
+
+  if (!expense) {
+    return res.status(404).json({ message: 'Expense not found' });
+  }
+
+  return res.json(expense);
 };
+
 
 export const deleteExpense = async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -256,11 +260,13 @@ export const createExpenseCategory = async (req: Request, res: Response) => {
       data: category,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create income category',
-      error,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: 'Failed to create income category',
+        error,
+      });
   }
 };
 
@@ -343,11 +349,13 @@ export const deleteIncomeCategory = async (req: Request, res: Response) => {
       .status(200)
       .json({ success: true, message: 'Income category deleted successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete income category',
-      error,
-    });
+    res
+      .status(500)
+      .json({
+        success: false,
+        message: 'Failed to delete income category',
+        error,
+      });
   }
 };
 

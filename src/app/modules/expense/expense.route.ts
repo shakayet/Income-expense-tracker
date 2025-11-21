@@ -32,6 +32,9 @@ router
   .post(expenseController.createExpenseCategory);
 router.post('/ocr-raw', uploadTextAndExtractExpense);
 
+router.route('/generate/csv').get(expenseCSVController);
+router.route('/generate/excel').get(expenseExcelController);
+
 router
   .route('/:id')
   .get(expenseController.getExpense) // Add this line
@@ -41,7 +44,5 @@ router
 router.route('/categories/:id').patch(expenseController.updateExpenseCategory);
 router.route('/categories/:id').delete(expenseController.deleteIncomeCategory);
 router.route('/generate/pdf').get(expensePdfController);
-router.route('/generate/csv').get(expenseCSVController);
-router.route('/generate/excel').get(expenseExcelController);
 
 export const ExpenseRoutes = router;

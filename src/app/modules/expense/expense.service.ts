@@ -37,8 +37,16 @@ export const updateExpense = (
   userId: Types.ObjectId,
   data: Partial<IExpense>
 ) => {
-  return Expense.findOneAndUpdate({ _id: id, userId }, data, { new: true });
+  return Expense.findOneAndUpdate(
+    { _id: id, userId },
+    { $set: data },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
 };
+
 
 export const deleteExpense = (id: string, userId: Types.ObjectId) => {
   return Expense.findOneAndDelete({ _id: id, userId });

@@ -12,10 +12,8 @@ export const createExpenseZodSchema = z.object({
 });
 
 export const expenseUpdateSchema = z.object({
-  amount: z.preprocess(
-    val => (val === undefined ? undefined : Number(val)),
-    z.number().positive().optional()
-  ),
-  category: z.string().min(1).optional(),
-  note: z.string().optional(),
+  amount: z.number().optional(),
+  source: z.string().optional(),
+  month: z.string().optional(),
+  date: z.string().datetime().optional()
 });

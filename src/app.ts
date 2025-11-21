@@ -5,7 +5,7 @@ import { StatusCodes } from 'http-status-codes';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import router from './routes';
 import { Morgan } from './shared/morgen';
-import handleStripeWebhook from './stripe/handleStripeWebhook';
+// import handleStripeWebhook from './stripe/handleStripeWebhook';
 // import stripe from './config/stripe';
 const app = express();
 
@@ -15,11 +15,11 @@ const app = express();
 //     handleStripeWebhook
 // );
 
-app.post(
-  '/api/stripe/webhook',
-  express.raw({ type: 'application/json' }),
-  handleStripeWebhook
-);
+// app.post(
+//   '/api/stripe/webhook',
+//   express.raw({ type: 'application/json' }),
+//   handleStripeWebhook
+// );
 
 //morgan
 app.use(Morgan.successHandler);

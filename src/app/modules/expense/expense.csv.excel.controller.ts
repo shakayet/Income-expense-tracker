@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -53,7 +54,7 @@ export const expenseCSVController = async (req: Request, res: Response) => {
     }
     console.log(reportData);
     // Generate and stream PDF to client
-    await generateExpenseCSV(reportData, res);
+    await generateExpenseCSV(reportData as any, res);
   } catch (error) {
     console.error('PDF Error:', error);
     return res.status(500).json({
@@ -112,7 +113,7 @@ export const expenseExcelController = async (req: Request, res: Response) => {
     }
     console.log(reportData);
     // Generate and stream PDF to client
-    await generateExpenseExcel(reportData.data, res);
+    await generateExpenseExcel(reportData.data as any, res);
   } catch (error) {
     console.error('PDF Error:', error);
     return res.status(500).json({

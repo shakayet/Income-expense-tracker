@@ -14,7 +14,7 @@ import comparePriceRoutes from '../app/modules/price-compare/compare.route';
 import { TermsRoutes } from '../app/modules/terms&conditions/routes';
 import { ReviewRoutes } from '../app/modules/review/review.route';
 import { recentTransaction } from '../app/modules/recentTransaction/recentTransaction.route';
-import { stripePayments } from '../stripe/stripeRoute';
+// import { stripePayments } from '../stripe/stripeRoute';
 import { Scraping } from '../app/modules/scraping/affiliate.routes';
 import { NotificationRoutes } from '../app/modules/notification/notification.route';
 import { MarketplaceRoutes } from '../app/modules/marketplace/marketplace.route';
@@ -22,7 +22,7 @@ import { MarketplacecredentialRoutes } from '../app/modules/marketplacecredentia
 import { SavingsRoutes } from '../app/modules/savings/savings.route';
 import { InAppPurchaseRoutes } from '../app/modules/inAppPurchase/inapp.route';
 import { SubscriptionPlan } from '../app/modules/subscription_plan/route';
-
+import DevRoutes from '../app/modules/dev/dev.route';
 
 const router = express.Router();
 
@@ -83,21 +83,21 @@ const apiRoutes = [
     path: '/recent-transactions',
     route: recentTransaction,
   },
-  {
-    path: '/stripe',
-    route: stripePayments,
-  },
+  // {
+  //   path: '/stripe',
+  //   route: stripePayments,
+  // },
   {
     path: '/scraping',
     route: Scraping,
   },
-  { 
-    path: '/marketplace', 
-    route: MarketplaceRoutes 
+  {
+    path: '/marketplace',
+    route: MarketplaceRoutes,
   },
-  { 
-    path: '/marketplacecredential', 
-    route: MarketplacecredentialRoutes 
+  {
+    path: '/marketplacecredential',
+    route: MarketplacecredentialRoutes,
   },
   {
     path: '/savings',
@@ -110,7 +110,11 @@ const apiRoutes = [
   {
     path: '/subscription-plan',
     route: SubscriptionPlan,
-  }
+  },
+  {
+    path: '/dev',
+    route: DevRoutes,
+  },
 ];
 
 apiRoutes.forEach(route => router.use(route.path, route.route));
