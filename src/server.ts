@@ -13,7 +13,6 @@ import { seedSuperAdmin } from './DB/seedAdmin';
 import { socketHelper } from './helpers/socketHelper';
 import { errorLogger, logger } from './shared/logger';
 
-//uncaught exception
 process.on('uncaughtException', (error: Error) => {
   errorLogger.error('UnhandleException Detected', error);
   process.exit(1);
@@ -25,7 +24,6 @@ async function main() {
     mongoose.connect(config.database_url as string);
     logger.info(colors.green('🚀 Database connected successfully'));
 
-    //Seed Super Admin after database connection is successful
     await seedSuperAdmin();
 
     const port =
@@ -37,7 +35,6 @@ async function main() {
       );
     }) as http.Server;
 
-    //socket
     const io = new Server(server, {
       pingTimeout: 60000,
       cors: {
@@ -50,7 +47,6 @@ async function main() {
     errorLogger.error(colors.red('🤢 Failed to connect Database'), error);
   }
 
-  //handle unhandleRejection
   process.on('unhandledRejection', (error: unknown) => {
     if (server) {
       server.close(() => {
