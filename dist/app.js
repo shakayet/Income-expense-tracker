@@ -34,6 +34,7 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use(express_1.default.static('uploads'));
 //router
 app.use('/api/v1', routes_1.default);
+//asdfkasdf
 // TODO
 // app.post('/create-checkout-session', async (req: Request, res: Response) => {
 //   const { id } = req.body;
