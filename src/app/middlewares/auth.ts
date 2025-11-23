@@ -36,7 +36,6 @@ const auth =
         // set user to request (only keep id for request.user as defined in global.d.ts)
         // req.user = { id: payload.id ?? payload._id };
         req.user = payload;
-        // guard by role if provided
         if (roles.length && payload.role && !roles.includes(payload.role)) {
           throw new ApiError(
             StatusCodes.FORBIDDEN,
