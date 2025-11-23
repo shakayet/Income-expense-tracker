@@ -15,7 +15,7 @@ const router = express_1.default.Router();
 router.patch('/set-pin', (0, auth_1.default)(user_1.USER_ROLES.SUPER_ADMIN, user_1.USER_ROLES.USER, user_1.USER_ROLES.ADMIN), user_controller_1.UserController.setPin);
 router
     .route('/profile')
-    .get((0, auth_1.default)(user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.USER, user_1.USER_ROLES.ADMIN), user_controller_1.UserController.getUserProfile)
+    .get((0, auth_1.default)(user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.USER, user_1.USER_ROLES.SUPER_ADMIN), user_controller_1.UserController.getUserProfile)
     .patch((0, auth_1.default)(user_1.USER_ROLES.SUPER_ADMIN, user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.USER), (0, fileUploadHandler_1.default)(), (req, res, next) => {
     if (req.body.data) {
         req.body = user_validation_1.UserValidation.updateUserZodSchema.parse(JSON.parse(req.body.data));
