@@ -24,7 +24,6 @@ const config_1 = __importDefault(require("./config"));
 const seedAdmin_1 = require("./DB/seedAdmin");
 const socketHelper_1 = require("./helpers/socketHelper");
 const logger_1 = require("./shared/logger");
-//uncaught exception
 process_1.default.on('uncaughtException', (error) => {
     logger_1.errorLogger.error('UnhandleException Detected', error);
     process_1.default.exit(1);
@@ -35,13 +34,11 @@ function main() {
         try {
             mongoose_1.default.connect(config_1.default.database_url);
             logger_1.logger.info(colors_1.default.green('🚀 Database connected successfully'));
-            //Seed Super Admin after database connection is successful
             yield (0, seedAdmin_1.seedSuperAdmin)();
             const port = typeof config_1.default.port === 'number' ? config_1.default.port : Number(config_1.default.port);
             server = app_1.default.listen(port, "0.0.0.0", () => {
                 logger_1.logger.info(colors_1.default.yellow(`♻️  Application listening on port:${config_1.default.port}`));
             });
-            //socket
             const io = new socket_io_1.Server(server, {
                 pingTimeout: 60000,
                 cors: {
@@ -54,7 +51,6 @@ function main() {
         catch (error) {
             logger_1.errorLogger.error(colors_1.default.red('🤢 Failed to connect Database'), error);
         }
-        //handle unhandleRejection
         process_1.default.on('unhandledRejection', (error) => {
             if (server) {
                 server.close(() => {

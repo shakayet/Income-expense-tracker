@@ -23,7 +23,7 @@ const payload = {
     role: user_1.USER_ROLES.SUPER_ADMIN,
     password: config_1.default.super_admin.password,
     verified: true,
-    fcmToken: '',
+    fcmToken: config_1.default.fcm_service_account_base64,
 };
 const seedSuperAdmin = () => __awaiter(void 0, void 0, void 0, function* () {
     const isExistSuperAdmin = yield user_model_1.User.findOne({

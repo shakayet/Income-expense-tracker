@@ -31,7 +31,6 @@ const auth = (...roles) => (req, res, next) => __awaiter(void 0, void 0, void 0,
             // set user to request (only keep id for request.user as defined in global.d.ts)
             // req.user = { id: payload.id ?? payload._id };
             req.user = payload;
-            // guard by role if provided
             if (roles.length && payload.role && !roles.includes(payload.role)) {
                 throw new ApiError_1.default(http_status_codes_1.StatusCodes.FORBIDDEN, "You don't have permission to access this api");
             }
