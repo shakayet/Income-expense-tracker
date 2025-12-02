@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { InAppPurchase } from './inapp.model';
 import { IInAppPurchase } from './inapp.interface';
 import { Types } from 'mongoose';
@@ -67,6 +68,49 @@ export async function checkPremiumStatus(
   userId: string
 ): Promise<PremiumStatusResponse> {
   try {
+    // First, check the user's current userType in the database
+    const user = await User.findById(userId).select('userType').lean();
+    
+    // If userType is manually set to 'pro' by admin
+    if (user?.userType === 'pro') {
+      // Check if user has any valid purchase history
+      const latestPurchase = await InAppPurchase.findOne({
+        user: new Types.ObjectId(userId),
+        productId: {
+          $in: [
+            'com.mashiur.expenseapp.yearly',
+            'com.mashiur.expenseapp.monthly',
+          ],
+        },
+      })
+        .sort({ purchaseDate: -1 })
+        .lean();
+
+      // Admin-managed pro user without purchase history
+      if (!latestPurchase) {
+        return { isPremium: true, daysLeft: 30 };
+      }
+      
+      // Admin-managed pro user WITH purchase history - check validity
+      const isValid = isSubscriptionValid(latestPurchase as IInAppPurchase);
+      
+      if (isValid) {
+        const daysLeft = calculateDaysLeft(latestPurchase as IInAppPurchase);
+        await User.findByIdAndUpdate(
+          userId,
+          {
+            currentSubscription: latestPurchase._id,
+          },
+          { new: true }
+        );
+        return { isPremium: true, daysLeft };
+      }
+      
+      // Purchase is invalid but user is admin-set to pro
+      return { isPremium: true, daysLeft: 30 };
+    }
+
+    // Existing logic for non-pro users (free users with or without purchases)
     const latestPurchase = await InAppPurchase.findOne({
       user: new Types.ObjectId(userId),
       productId: {
