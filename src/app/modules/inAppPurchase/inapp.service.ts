@@ -1,13 +1,9 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-console */
 import { InAppPurchase } from './inapp.model';
 import { IInAppPurchase } from './inapp.interface';
 import { Types } from 'mongoose';
 import { User } from '../user/user.model';
-
-export type PremiumStatusResponse = {
-  isPremium: boolean;
-  daysLeft?: number;
-};
 
 export const createPurchaseInDB = async (
   payload: IInAppPurchase,
@@ -68,12 +64,12 @@ export async function checkPremiumStatus(
   userId: string
 ): Promise<PremiumStatusResponse> {
   try {
-    // First, check the user's current userType in the database
+    // First, check if user is manually set as pro by admin
     const user = await User.findById(userId).select('userType').lean();
     
-    // If userType is manually set to 'pro' by admin
+    // If admin has manually set user as pro, return premium with 30 days
     if (user?.userType === 'pro') {
-      // Check if user has any valid purchase history
+      // Check if user has any valid purchase
       const latestPurchase = await InAppPurchase.findOne({
         user: new Types.ObjectId(userId),
         productId: {
@@ -86,31 +82,31 @@ export async function checkPremiumStatus(
         .sort({ purchaseDate: -1 })
         .lean();
 
-      // Admin-managed pro user without purchase history
+      // If no purchase found (admin-managed pro user), return 30 days
       if (!latestPurchase) {
         return { isPremium: true, daysLeft: 30 };
       }
       
-      // Admin-managed pro user WITH purchase history - check validity
+      // If purchase exists, check if it's valid
       const isValid = isSubscriptionValid(latestPurchase as IInAppPurchase);
       
+      // If valid purchase exists, use its daysLeft
       if (isValid) {
         const daysLeft = calculateDaysLeft(latestPurchase as IInAppPurchase);
+        // Update currentSubscription but keep userType as pro
         await User.findByIdAndUpdate(
           userId,
-          {
-            currentSubscription: latestPurchase._id,
-          },
+          { currentSubscription: latestPurchase._id },
           { new: true }
         );
         return { isPremium: true, daysLeft };
       }
       
-      // Purchase is invalid but user is admin-set to pro
+      // If purchase exists but is invalid, still return premium (admin-managed)
       return { isPremium: true, daysLeft: 30 };
     }
 
-    // Existing logic for non-pro users (free users with or without purchases)
+    // Original logic for non-pro users (userType is not 'pro')
     const latestPurchase = await InAppPurchase.findOne({
       user: new Types.ObjectId(userId),
       productId: {
@@ -211,4 +207,10 @@ export async function getAnyUserPurchaseHistoryForAdmin(
     .populate('user', 'id email')
     .sort({ purchaseDate: -1 })
     .lean();
+}
+
+// Add this interface if not already defined
+type PremiumStatusResponse = {
+  isPremium: boolean;
+  daysLeft?: number;
 }

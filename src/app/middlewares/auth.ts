@@ -11,6 +11,8 @@ const auth =
     try {
       const tokenWithBearer = req.headers.authorization;
 
+      console.log('Authorization Header:', tokenWithBearer);
+
       if (!tokenWithBearer) {
         throw new ApiError(StatusCodes.UNAUTHORIZED, 'You are not authorized');
       }
@@ -23,6 +25,8 @@ const auth =
           token,
           config.jwt.jwt_secret as Secret
         );
+
+        console.log('Verified User:', verifyUser);
 
         // Normalize payload: jwt.verify can return string | JwtPayload
         const payload = verifyUser as unknown as {

@@ -4,9 +4,9 @@ import {
   getAllPurchases,
   getSinglePurchase,
   deletePurchase,
-  checkPremiumStatus,
   getUserPurchaseHistory,
   getAdminUserPurchaseHistory,
+  getPremiumStatus,
 } from './inapp.controller';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
@@ -24,7 +24,7 @@ router
 router.get(
   '/premium-status',
   auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN),
-  checkPremiumStatus
+  getPremiumStatus
 );
 
 router.get(

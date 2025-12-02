@@ -1,19 +1,19 @@
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import {
   createPurchaseInDB,
   getAllPurchasesFromDB,
   getSinglePurchaseFromDB,
   deletePurchaseFromDB,
-  checkPremiumStatus as checkPremiumStatusService,
+  checkPremiumStatus as checkPremiumStatusService, // Renamed to avoid collision
   getUserPurchases as getUserPurchasesService,
   getAnyUserPurchaseHistoryForAdmin,
-  PremiumStatusResponse,
 } from './inapp.service';
 import { IInAppPurchase } from './inapp.interface';
-import { Types } from 'mongoose';
 
-// Helper to normalize user id from auth middleware; support either `id` or `_id`
+// Helper to normalize user id from auth middleware
 function getUserId(req: Request): string | undefined {
+  // Assuming you have declared req.user in your global types
   const user = (req as unknown as { user?: { id?: string; _id?: string } })
     .user;
   return user?.id ?? user?._id;
@@ -87,25 +87,35 @@ export const deletePurchase = async (req: Request, res: Response) => {
   });
 };
 
-export async function checkPremiumStatus(req: Request, res: Response) {
+/**
+ * Controller function to check premium status.
+ * This replaces the misplaced service logic and calls the actual service function.
+ */
+export const getPremiumStatus = async (req: Request, res: Response) => {
   try {
     const userId = getUserId(req);
-    if (!userId)
+    if (!userId) {
       return res
         .status(401)
         .json({ success: false, message: 'User not authenticated' });
+    }
 
-    const premiumStatus: PremiumStatusResponse =
-      await checkPremiumStatusService(userId as string);
-    res.status(200).json({ success: true, data: premiumStatus });
+    // Calls the imported service logic
+    const status = await checkPremiumStatusService(userId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Premium status checked successfully',
+      data: status,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error checking premium status',
+      message: 'Failed to check premium status',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
-}
+};
 
 export async function getUserPurchaseHistory(req: Request, res: Response) {
   try {
@@ -128,8 +138,6 @@ export async function getUserPurchaseHistory(req: Request, res: Response) {
 
 /**
  * Admin/Super Admin endpoint to view purchase history for a specific user.
- * Route: GET /admin/users/:userId/purchase-history
- * Auth: ADMIN, SUPER_ADMIN
  */
 export async function getAdminUserPurchaseHistory(req: Request, res: Response) {
   try {
@@ -161,7 +169,7 @@ export const InAppPurchaseController = {
   getAllPurchases,
   getSinglePurchase,
   deletePurchase,
-  checkPremiumStatus,
+  checkPremiumStatus: getPremiumStatus, // Exporting the proper controller function
   getUserPurchaseHistory,
   getAdminUserPurchaseHistory,
 };
