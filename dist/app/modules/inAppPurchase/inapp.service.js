@@ -15,6 +15,8 @@ exports.isSubscriptionValid = isSubscriptionValid;
 exports.calculateDaysLeft = calculateDaysLeft;
 exports.getUserPurchases = getUserPurchases;
 exports.getAnyUserPurchaseHistoryForAdmin = getAnyUserPurchaseHistoryForAdmin;
+/* eslint-disable no-undef */
+/* eslint-disable no-console */
 const inapp_model_1 = require("./inapp.model");
 const mongoose_1 = require("mongoose");
 const user_model_1 = require("../user/user.model");
@@ -66,6 +68,39 @@ exports.deletePurchaseFromDB = deletePurchaseFromDB;
 function checkPremiumStatus(userId) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            // First, check if user is manually set as pro by admin
+            const user = yield user_model_1.User.findById(userId).select('userType').lean();
+            // If admin has manually set user as pro, return premium with 30 days
+            if ((user === null || user === void 0 ? void 0 : user.userType) === 'pro') {
+                // Check if user has any valid purchase
+                const latestPurchase = yield inapp_model_1.InAppPurchase.findOne({
+                    user: new mongoose_1.Types.ObjectId(userId),
+                    productId: {
+                        $in: [
+                            'com.mashiur.expenseapp.yearly',
+                            'com.mashiur.expenseapp.monthly',
+                        ],
+                    },
+                })
+                    .sort({ purchaseDate: -1 })
+                    .lean();
+                // If no purchase found (admin-managed pro user), return 30 days
+                if (!latestPurchase) {
+                    return { isPremium: true, daysLeft: 30 };
+                }
+                // If purchase exists, check if it's valid
+                const isValid = isSubscriptionValid(latestPurchase);
+                // If valid purchase exists, use its daysLeft
+                if (isValid) {
+                    const daysLeft = calculateDaysLeft(latestPurchase);
+                    // Update currentSubscription but keep userType as pro
+                    yield user_model_1.User.findByIdAndUpdate(userId, { currentSubscription: latestPurchase._id }, { new: true });
+                    return { isPremium: true, daysLeft };
+                }
+                // If purchase exists but is invalid, still return premium (admin-managed)
+                return { isPremium: true, daysLeft: 30 };
+            }
+            // Original logic for non-pro users (userType is not 'pro')
             const latestPurchase = yield inapp_model_1.InAppPurchase.findOne({
                 user: new mongoose_1.Types.ObjectId(userId),
                 productId: {

@@ -13,7 +13,7 @@ router
     .route('/')
     .post((0, auth_1.default)(user_1.USER_ROLES.USER), inapp_controller_1.createPurchase)
     .get((0, auth_1.default)(user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.SUPER_ADMIN, user_1.USER_ROLES.USER), inapp_controller_1.getAllPurchases);
-router.get('/premium-status', (0, auth_1.default)(user_1.USER_ROLES.USER, user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.SUPER_ADMIN), inapp_controller_1.checkPremiumStatus);
+router.get('/premium-status', (0, auth_1.default)(user_1.USER_ROLES.USER, user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.SUPER_ADMIN), inapp_controller_1.getPremiumStatus);
 router.get('/purchase-history', (0, auth_1.default)(user_1.USER_ROLES.USER, user_1.USER_ROLES.ADMIN, user_1.USER_ROLES.SUPER_ADMIN), inapp_controller_1.getUserPurchaseHistory);
 router
     .route('/:id')

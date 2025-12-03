@@ -9,15 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.InAppPurchaseController = exports.deletePurchase = exports.getSinglePurchase = exports.getAllPurchases = exports.createPurchase = void 0;
-exports.checkPremiumStatus = checkPremiumStatus;
+exports.InAppPurchaseController = exports.getPremiumStatus = exports.deletePurchase = exports.getSinglePurchase = exports.getAllPurchases = exports.createPurchase = void 0;
 exports.getUserPurchaseHistory = getUserPurchaseHistory;
 exports.getAdminUserPurchaseHistory = getAdminUserPurchaseHistory;
-const inapp_service_1 = require("./inapp.service");
 const mongoose_1 = require("mongoose");
-// Helper to normalize user id from auth middleware; support either `id` or `_id`
+const inapp_service_1 = require("./inapp.service");
+// Helper to normalize user id from auth middleware
 function getUserId(req) {
     var _a;
+    // Assuming you have declared req.user in your global types
     const user = req
         .user;
     return (_a = user === null || user === void 0 ? void 0 : user.id) !== null && _a !== void 0 ? _a : user === null || user === void 0 ? void 0 : user._id;
@@ -81,26 +81,35 @@ const deletePurchase = (req, res) => __awaiter(void 0, void 0, void 0, function*
     });
 });
 exports.deletePurchase = deletePurchase;
-function checkPremiumStatus(req, res) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const userId = getUserId(req);
-            if (!userId)
-                return res
-                    .status(401)
-                    .json({ success: false, message: 'User not authenticated' });
-            const premiumStatus = yield (0, inapp_service_1.checkPremiumStatus)(userId);
-            res.status(200).json({ success: true, data: premiumStatus });
+/**
+ * Controller function to check premium status.
+ * This replaces the misplaced service logic and calls the actual service function.
+ */
+const getPremiumStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const userId = getUserId(req);
+        if (!userId) {
+            return res
+                .status(401)
+                .json({ success: false, message: 'User not authenticated' });
         }
-        catch (error) {
-            res.status(500).json({
-                success: false,
-                message: 'Error checking premium status',
-                error: error instanceof Error ? error.message : 'Unknown error',
-            });
-        }
-    });
-}
+        // Calls the imported service logic
+        const status = yield (0, inapp_service_1.checkPremiumStatus)(userId);
+        res.status(200).json({
+            success: true,
+            message: 'Premium status checked successfully',
+            data: status,
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check premium status',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+exports.getPremiumStatus = getPremiumStatus;
 function getUserPurchaseHistory(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -123,8 +132,6 @@ function getUserPurchaseHistory(req, res) {
 }
 /**
  * Admin/Super Admin endpoint to view purchase history for a specific user.
- * Route: GET /admin/users/:userId/purchase-history
- * Auth: ADMIN, SUPER_ADMIN
  */
 function getAdminUserPurchaseHistory(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -155,7 +162,7 @@ exports.InAppPurchaseController = {
     getAllPurchases: exports.getAllPurchases,
     getSinglePurchase: exports.getSinglePurchase,
     deletePurchase: exports.deletePurchase,
-    checkPremiumStatus,
+    checkPremiumStatus: exports.getPremiumStatus, // Exporting the proper controller function
     getUserPurchaseHistory,
     getAdminUserPurchaseHistory,
 };

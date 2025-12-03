@@ -19,6 +19,7 @@ const jwtHelper_1 = require("../../helpers/jwtHelper");
 const auth = (...roles) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const tokenWithBearer = req.headers.authorization;
+        console.log('Authorization Header:', tokenWithBearer);
         if (!tokenWithBearer) {
             throw new ApiError_1.default(http_status_codes_1.StatusCodes.UNAUTHORIZED, 'You are not authorized');
         }
@@ -26,6 +27,7 @@ const auth = (...roles) => (req, res, next) => __awaiter(void 0, void 0, void 0,
             const token = tokenWithBearer.split(' ')[1];
             // verify token
             const verifyUser = jwtHelper_1.jwtHelper.verifyToken(token, config_1.default.jwt.jwt_secret);
+            console.log('Verified User:', verifyUser);
             // Normalize payload: jwt.verify can return string | JwtPayload
             const payload = verifyUser;
             // set user to request (only keep id for request.user as defined in global.d.ts)
