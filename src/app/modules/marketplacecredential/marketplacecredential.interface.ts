@@ -22,6 +22,8 @@ export interface IMarketplacecredential {
   awsSecretAccessKey?: string;
   marketplaceId?: string;
   environment?: 'sandbox' | 'production';
+  country?: string;
+  region?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

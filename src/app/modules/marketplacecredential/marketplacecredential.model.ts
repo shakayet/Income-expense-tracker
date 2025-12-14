@@ -26,6 +26,8 @@ const marketplacecredentialSchema = new Schema<
       enum: ['sandbox', 'production'],
       default: 'sandbox',
     },
+    country: { type: String },
+    region: { type: String },
     createdAt: { type: Date },
     updatedAt: { type: Date },
   },
