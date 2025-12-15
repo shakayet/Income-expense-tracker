@@ -19,6 +19,8 @@ const marketplacecredentialSchema = new mongoose_1.Schema({
         enum: ['sandbox', 'production'],
         default: 'sandbox',
     },
+    country: { type: String },
+    region: { type: String },
     createdAt: { type: Date },
     updatedAt: { type: Date },
 }, {
