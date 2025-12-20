@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 
 export type IBudgetCategory = {
-  categoryId: Types.ObjectId;
+  category: string;
   amount: number;
 };
 
