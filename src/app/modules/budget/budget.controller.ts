@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable no-console */
 import { Request, Response } from 'express';
@@ -566,7 +568,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
             },
             {
               $group: {
-                _id: '$category',
+                _id: '$source',
                 totalSpent: { $sum: '$amount' },
               },
             },
@@ -627,8 +629,18 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                               input: '$expensesByCategory',
                               cond: {
                                 $eq: [
-                                  { $toString: '$$this._id' },
-                                  '$$cat.categoryId',
+                                  {
+                                    $toLower: {
+                                      $trim: {
+                                        input: { $toString: '$$this._id' },
+                                      },
+                                    },
+                                  },
+                                  {
+                                    $toLower: {
+                                      $trim: { input: '$$cat.categoryId' },
+                                    },
+                                  },
                                 ],
                               },
                             },
@@ -721,13 +733,13 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               { $sum: '$expensesByCategory.totalSpent' },
             ],
           },
-          // effectiveTotalBudget: {
-          //   $cond: [
-          //     { $gt: ['$totalBudget', 0] },
-          //     '$totalBudget',
-          //     '$totalCategoryAmount',
-          //   ],
-          // },
+          effectiveTotalBudget: {
+            $cond: [
+              { $gt: ['$totalBudget', 0] },
+              '$totalBudget',
+              '$totalCategoryAmount',
+            ],
+          },
         },
       },
       // Projection
@@ -736,7 +748,10 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           _id: 0,
           month: 1,
           // totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
-          totalBudget: { $toString: { $round: ['$totalBudget', 2] } },
+          totalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
+          totalCategoryAmount: {
+            $toString: { $round: ['$totalCategoryAmount', 2] },
+          },
           // totalCategoryAmount: {
           //   $toString: { $round: ['$totalCategoryAmount', 2] },
           // },
@@ -757,10 +772,10 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               $round: [
                 {
                   $cond: [
-                    { $gt: ['$totalBudget', 0] },
+                    { $gt: ['$effectiveTotalBudget', 0] },
                     {
                       $multiply: [
-                        { $divide: ['$totalExpense', '$totalBudget'] },
+                        { $divide: ['$totalExpense', '$effectiveTotalBudget'] },
                         100,
                       ],
                     },

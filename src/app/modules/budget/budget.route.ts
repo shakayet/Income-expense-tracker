@@ -31,25 +31,23 @@ router.use(auth(USER_ROLES.USER));
 // Route to get only monthly budget and month for a user
 router.get('/monthly-budget', getMonthlyBudgetAndMonth);
 
-router.use(auth(USER_ROLES.USER));
-
 router.route('/monthly').post(setMonthlyBudget);
 
 // Accumulative POST for current month: body { category: string, amount: number }
-router.route('/current').post(postAccumulativeBudget);
+router.route('/current').post(postAccumulativeBudget); // -------> actual working route
 
 // Monthly summary: GET /budgets/monthly/:month
 router.route('/monthly/:month').get(getMonthlySummary);
 
 router.route('/simple-monthly-budget').post(postSimpleBudgetDetails);
-router.route('/simple-monthly-budget').get(getSimpleBudgetDetails);
+router.route('/simple-monthly-budget').get(getSimpleBudgetDetails);  // --------> actual working route
 
 router
   .route('/monthly/:month')
   .patch(validateRequest(updateMonthlyBudgetZodSchema), updateMonthlyBudget);
 
 router.route('/').post(validateRequest(setBudgetZodSchema), setOrUpdateBudget);
-router.route('/:month').get(getBudgetDetails); //this route
+router.route('/:month').get(getBudgetDetails); // --------> actual working route
 
 router
   .route('/:month/category')
