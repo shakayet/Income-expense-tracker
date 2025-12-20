@@ -59,21 +59,16 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
         message: 'Month and categories array are required',
       });
     }
-    // Convert all categoryId to ObjectId
+    // Ensure categoryId is a string and keep as string
     const parsedCategories = categories.map(cat => {
       if (!cat.categoryId || cat.amount === undefined) {
         throw new Error('Each category must have categoryId and amount');
       }
-      // Always store as ObjectId
-      let categoryObjId = cat.categoryId;
-      if (typeof categoryObjId === 'string') {
-        if (!mongoose.Types.ObjectId.isValid(categoryObjId)) {
-          throw new Error('Invalid categoryId format');
-        }
-        categoryObjId = new mongoose.Types.ObjectId(categoryObjId);
+      if (typeof cat.categoryId !== 'string') {
+        throw new Error('categoryId must be a string');
       }
       return {
-        categoryId: categoryObjId,
+        categoryId: cat.categoryId,
         amount: cat.amount,
       };
     });
@@ -203,54 +198,31 @@ export const addBudgetCategory = async (req: Request, res: Response) => {
         message: 'Category ID and amount are required',
       });
     }
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
+    if (typeof categoryId !== 'string' || !categoryId.trim()) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid Category ID format',
+        message: 'Invalid Category ID',
       });
     }
-    const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
     let budget = await Budget.findOne({ userId, month });
     if (!budget) {
       budget = await Budget.create({
         userId,
         month,
-        categories: [{ categoryId: categoryObjectId, amount }],
+        categories: [{ categoryId, amount }],
       });
     } else {
-      // Ensure categories is always an array
       if (!Array.isArray(budget.categories)) {
         budget.categories = [];
       }
-      // Prevent duplicate categoryId
       const existingCategoryIndex = budget.categories.findIndex(
-        cat =>
-          cat.categoryId &&
-          cat.categoryId.toString() === categoryObjectId.toString()
+        cat => cat.categoryId === categoryId
       );
       if (existingCategoryIndex !== -1) {
         budget.categories[existingCategoryIndex].amount = amount;
       } else {
-        if (!categoryObjectId) {
-          console.error('categoryObjectId is undefined! Payload:', req.body);
-          return res.status(400).json({
-            success: false,
-            message:
-              'categoryObjectId is undefined. Check your request payload.',
-          });
-        }
-        console.log('Adding category:', { categoryObjectId, amount });
-        // Remove any invalid categories before pushing
         budget.categories = budget.categories.filter(cat => cat.categoryId);
-        // Always push as ObjectId
-        let catObjId = categoryObjectId;
-        if (typeof catObjId === 'string') {
-          catObjId = new mongoose.Types.ObjectId(catObjId);
-        }
-        budget.categories.push({
-          categoryId: catObjId,
-          amount,
-        });
+        budget.categories.push({ categoryId, amount });
       }
       await budget.save();
     }
@@ -288,7 +260,7 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
     }
 
     const categoryIndex = budget.categories?.findIndex(
-      cat => cat.categoryId.toString() === categoryId
+      cat => cat.categoryId === categoryId
     );
 
     if (categoryIndex === undefined || categoryIndex === -1) {
@@ -340,7 +312,7 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
 
     const initialLength = budget.categories?.length;
     budget.categories = budget.categories?.filter(
-      cat => cat.categoryId.toString() !== categoryId
+      cat => cat.categoryId !== categoryId
     );
 
     if (!budget.categories || budget.categories.length === initialLength) {

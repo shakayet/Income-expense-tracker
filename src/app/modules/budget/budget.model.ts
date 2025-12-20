@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export type IBudgetCategory = {
-  categoryId: mongoose.Types.ObjectId;
+  categoryId: string;
   amount: number;
 };
 
@@ -18,8 +18,7 @@ export type IBudget = {
 const budgetCategorySchema = new Schema<IBudgetCategory>(
   {
     categoryId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Category',
+      type: String,
       required: [true, 'Category ID is required'],
     },
     amount: {
