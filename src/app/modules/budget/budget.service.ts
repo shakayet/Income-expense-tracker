@@ -90,3 +90,85 @@ export const notifyOnBudgetThreshold = async (
     );
   }
 };
+
+/**
+ * Adds (or increments) a category budget for a user for a given month.
+ * If budget doc doesn't exist it will be created. If category exists its amount is incremented.
+ */
+export const addOrIncrementCategory = async (
+  userId: string,
+  month: string,
+  category: string,
+  amount: number
+) => {
+  // find or create
+  let budget = await Budget.findOne({ userId, month });
+  if (!budget) {
+    budget = await Budget.create({
+      userId,
+      month,
+      categories: [{ categoryId: category, amount }],
+    });
+    return budget;
+  }
+
+  if (!Array.isArray(budget.categories)) budget.categories = [];
+
+  const idx = budget.categories.findIndex(cat => cat.categoryId === category);
+  if (idx !== -1) {
+    budget.categories[idx].amount =
+      (budget.categories[idx].amount ?? 0) + amount;
+  } else {
+    budget.categories.push({ categoryId: category, amount });
+  }
+
+  // Recalculate totalCategoryAmount
+  budget.totalCategoryAmount = (budget.categories ?? []).reduce(
+    (s, c) => s + (typeof c.amount === 'number' ? c.amount : 0),
+    0
+  );
+
+  // If totalBudget exists, leave it; otherwise we keep it undefined
+  await budget.save();
+  return budget;
+};
+
+/**
+ * Build a monthly summary for a user and month.
+ */
+export const buildMonthlySummary = async (userId: string, month: string) => {
+  // Reuse existing report service to calculate expenses
+  const report = await getMonthlyReport(userId, month);
+  const reportAny: any = report;
+  const totalExpense = reportAny.totalExpense ?? 0;
+
+  const budget = await Budget.findOne({ userId, month });
+  const totalBudget = budget?.totalBudget ?? budget?.totalCategoryAmount ?? 0;
+
+  const totalPercentageUsed =
+    totalBudget > 0 ? (totalExpense / totalBudget) * 100 : 0;
+
+  const categories = (budget?.categories ?? []).map(cat => {
+    const amount = typeof cat.amount === 'number' ? cat.amount : 0;
+    // Try to get expense for this category from report.categories if available
+    const catExpense =
+      (reportAny.categories || []).find(
+        (c: any) => String(c._id) === String(cat.categoryId)
+      )?.totalExpense ?? 0;
+    const percentageUsed = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
+    return {
+      category: cat.categoryId,
+      amount,
+      percentageUsed: percentageUsed,
+      spent: catExpense,
+    };
+  });
+
+  return {
+    month,
+    totalBudget,
+    totalExpense,
+    totalPercentageUsed,
+    categories,
+  };
+};

@@ -2,12 +2,14 @@ import express from 'express';
 import {
   setOrUpdateBudget,
   getBudgetDetails,
+  postAccumulativeBudget,
   addBudgetCategory,
   updateBudgetCategory,
   deleteBudgetCategory,
   setMonthlyBudget,
   updateMonthlyBudget,
   getMonthlyBudgetAndMonth,
+  getMonthlySummary,
   getSimpleBudgetDetails,
   postSimpleBudgetDetails,
 } from './budget.controller';
@@ -33,6 +35,11 @@ router.use(auth(USER_ROLES.USER));
 
 router.route('/monthly').post(setMonthlyBudget);
 
+// Accumulative POST for current month: body { category: string, amount: number }
+router.route('/current').post(postAccumulativeBudget);
+
+// Monthly summary: GET /budgets/monthly/:month
+router.route('/monthly/:month').get(getMonthlySummary);
 
 router.route('/simple-monthly-budget').post(postSimpleBudgetDetails);
 router.route('/simple-monthly-budget').get(getSimpleBudgetDetails);

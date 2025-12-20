@@ -5,9 +5,12 @@ import { Budget } from './budget.model';
 import mongoose from 'mongoose';
 // import Expense from '../expense/expense.model';
 import process from 'process';
-import // notifyOnBudgetThreshold,
-// getBudgetByUserAndMonth,
-'./budget.service';
+import {
+  notifyOnBudgetThreshold,
+  addOrIncrementCategory,
+  buildMonthlySummary,
+  getBudgetByUserAndMonth,
+} from './budget.service';
 
 // Get only monthly budget and month for a user
 export const getMonthlyBudgetAndMonth = async (req: Request, res: Response) => {
@@ -42,6 +45,56 @@ export const getMonthlyBudgetAndMonth = async (req: Request, res: Response) => {
       message: 'Failed to fetch monthly budget',
       error,
     });
+  }
+};
+
+// POST accumulative budget for current month
+export const postAccumulativeBudget = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { category, amount } = req.body;
+    if (!category || typeof category !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'category is required and must be a string',
+      });
+    }
+    if (amount === undefined || typeof amount !== 'number' || amount < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'amount is required and must be a non-negative number',
+      });
+    }
+
+    // Detect current month server-side
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
+      2,
+      '0'
+    )}`;
+
+    const budget = await addOrIncrementCategory(
+      userId,
+      month,
+      category,
+      amount
+    );
+
+    // Trigger notifications check (reuse existing notifier)
+    try {
+      await notifyOnBudgetThreshold(userId, month);
+    } catch (e) {
+      console.warn('notifyOnBudgetThreshold failed', e);
+    }
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'Budget posted', data: budget });
+  } catch (error) {
+    console.error('Error in postAccumulativeBudget:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 
@@ -572,7 +625,12 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
                           {
                             $filter: {
                               input: '$expensesByCategory',
-                              cond: { $eq: ['$$this._id', '$$cat.categoryId'] },
+                              cond: {
+                                $eq: [
+                                  { $toString: '$$this._id' },
+                                  '$$cat.categoryId',
+                                ],
+                              },
                             },
                           },
                           0,
@@ -810,6 +868,41 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
     return res.json({ success: true, data: budgetResult[0] });
   } catch (error) {
     console.error('Error in getBudgetDetails:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// GET monthly summary: /budgets/monthly/:month
+export const getMonthlySummary = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+    const { month } = req.params;
+    if (!month || typeof month !== 'string')
+      return res.status(400).json({ message: 'month param required' });
+
+    const summary = await buildMonthlySummary(userId, month);
+
+    // Format response according to spec
+    const categories = (summary.categories || []).map(c => ({
+      category: c.category,
+      amount: Number(c.amount),
+      percentageUsed: Number(
+        ((c.amount ?? 0) / (summary.totalBudget || 1)) * 100
+      ),
+    }));
+
+    const resp = {
+      month: summary.month,
+      totalBudget: Number(summary.totalBudget || 0),
+      totalExpense: Number(summary.totalExpense || 0),
+      totalPercentageUsed: Number(summary.totalPercentageUsed || 0),
+      categories,
+    };
+
+    return res.json({ success: true, data: resp });
+  } catch (error) {
+    console.error('Error in getMonthlySummary:', error);
     return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };

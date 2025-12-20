@@ -9,8 +9,8 @@ export const notifyIfCategoryThresholdCrossed = async ({
   budgetAmount,
   existingThresholds = [],
 }: {
-  userId: Types.ObjectId;
-  categoryId: Types.ObjectId;
+  userId: Types.ObjectId | string;
+  categoryId: Types.ObjectId | string;
   month: string;
   totalExpense: number;
   budgetAmount: number;
@@ -27,10 +27,12 @@ export const notifyIfCategoryThresholdCrossed = async ({
           title: `Category Budget Alert: ${t}% reached`,
           message: `You've used ${t}% of your category budget for month ${month}. Tap to see details.`,
           reportMonth: month,
-          categoryId: categoryId.toString(),
-          detailsLink: `/api/v1/category/details?categoryId=${categoryId}&month=${month}`,
+          categoryId: String(categoryId),
+          detailsLink: `/api/v1/category/details?categoryId=${String(
+            categoryId
+          )}&month=${month}`,
         },
-        userId.toString()
+        String(userId)
       );
       existingThresholds.push(t);
     }
@@ -43,10 +45,12 @@ export const notifyIfCategoryThresholdCrossed = async ({
         title: `Category Budget Exceeded!`,
         message: `You've exceeded your category budget for month ${month}. Tap to see details.`,
         reportMonth: month,
-        categoryId: categoryId.toString(),
-        detailsLink: `/api/v1/category/details?categoryId=${categoryId}&month=${month}`,
+        categoryId: String(categoryId),
+        detailsLink: `/api/v1/category/details?categoryId=${String(
+          categoryId
+        )}&month=${month}`,
       },
-      userId.toString()
+      String(userId)
     );
     existingThresholds.push(101);
   }
