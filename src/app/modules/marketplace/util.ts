@@ -1,9 +1,14 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-undef */
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import config from '../../../config';
 
 const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
 
-interface AmazonProduct {
+type AmazonProduct = {
   title: string;
   price: number;
   image: string;
