@@ -21,9 +21,9 @@ const notifyIfCategoryThresholdCrossed = (_a) => __awaiter(void 0, [_a], void 0,
                 title: `Category Budget Alert: ${t}% reached`,
                 message: `You've used ${t}% of your category budget for month ${month}. Tap to see details.`,
                 reportMonth: month,
-                categoryId: categoryId.toString(),
-                detailsLink: `/api/v1/category/details?categoryId=${categoryId}&month=${month}`,
-            }, userId.toString());
+                categoryId: String(categoryId),
+                detailsLink: `/api/v1/category/details?categoryId=${String(categoryId)}&month=${month}`,
+            }, String(userId));
             existingThresholds.push(t);
         }
     }
@@ -33,9 +33,9 @@ const notifyIfCategoryThresholdCrossed = (_a) => __awaiter(void 0, [_a], void 0,
             title: `Category Budget Exceeded!`,
             message: `You've exceeded your category budget for month ${month}. Tap to see details.`,
             reportMonth: month,
-            categoryId: categoryId.toString(),
-            detailsLink: `/api/v1/category/details?categoryId=${categoryId}&month=${month}`,
-        }, userId.toString());
+            categoryId: String(categoryId),
+            detailsLink: `/api/v1/category/details?categoryId=${String(categoryId)}&month=${month}`,
+        }, String(userId));
         existingThresholds.push(101);
     }
 });

@@ -15,6 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getSingleAmazonProduct = exports.getCheapestAmazonProducts = exports.getAmazonProduct = void 0;
 exports.getTopCheapestProductsFromEbay = getTopCheapestProductsFromEbay;
 exports.getSingleProductFromEbay = getSingleProductFromEbay;
+/* eslint-disable no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-undef */
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const axios_1 = __importDefault(require("axios"));
 const config_1 = __importDefault(require("../../../config"));
 const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';

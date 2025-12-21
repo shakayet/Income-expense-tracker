@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.notifyOnBudgetThreshold = exports.getUserMonthlyBudget = exports.getBudgetByUserAndMonth = void 0;
+exports.buildMonthlySummary = exports.addOrIncrementCategory = exports.notifyOnBudgetThreshold = exports.getUserMonthlyBudget = exports.getBudgetByUserAndMonth = void 0;
 // Get only monthly budget and month for a user
 const notification_service_1 = require("../notification/notification.service");
 const report_service_1 = require("../reports/report.service");
@@ -79,3 +79,70 @@ const notifyOnBudgetThreshold = (userId, month) => __awaiter(void 0, void 0, voi
     }
 });
 exports.notifyOnBudgetThreshold = notifyOnBudgetThreshold;
+/**
+ * Adds (or increments) a category budget for a user for a given month.
+ * If budget doc doesn't exist it will be created. If category exists its amount is incremented.
+ */
+const addOrIncrementCategory = (userId, month, category, amount) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    // find or create
+    let budget = yield budget_model_1.Budget.findOne({ userId, month });
+    if (!budget) {
+        budget = yield budget_model_1.Budget.create({
+            userId,
+            month,
+            categories: [{ categoryId: category, amount }],
+        });
+        return budget;
+    }
+    if (!Array.isArray(budget.categories))
+        budget.categories = [];
+    const idx = budget.categories.findIndex(cat => cat.categoryId === category);
+    if (idx !== -1) {
+        budget.categories[idx].amount =
+            ((_a = budget.categories[idx].amount) !== null && _a !== void 0 ? _a : 0) + amount;
+    }
+    else {
+        budget.categories.push({ categoryId: category, amount });
+    }
+    // Recalculate totalCategoryAmount
+    budget.totalCategoryAmount = ((_b = budget.categories) !== null && _b !== void 0 ? _b : []).reduce((s, c) => s + (typeof c.amount === 'number' ? c.amount : 0), 0);
+    // If totalBudget exists, leave it; otherwise we keep it undefined
+    yield budget.save();
+    return budget;
+});
+exports.addOrIncrementCategory = addOrIncrementCategory;
+/**
+ * Build a monthly summary for a user and month.
+ */
+const buildMonthlySummary = (userId, month) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
+    // Reuse existing report service to calculate expenses
+    const report = yield (0, report_service_1.getMonthlyReport)(userId, month);
+    const reportAny = report;
+    const totalExpense = (_a = reportAny.totalExpense) !== null && _a !== void 0 ? _a : 0;
+    const budget = yield budget_model_1.Budget.findOne({ userId, month });
+    const totalBudget = (_c = (_b = budget === null || budget === void 0 ? void 0 : budget.totalBudget) !== null && _b !== void 0 ? _b : budget === null || budget === void 0 ? void 0 : budget.totalCategoryAmount) !== null && _c !== void 0 ? _c : 0;
+    const totalPercentageUsed = totalBudget > 0 ? (totalExpense / totalBudget) * 100 : 0;
+    const categories = ((_d = budget === null || budget === void 0 ? void 0 : budget.categories) !== null && _d !== void 0 ? _d : []).map(cat => {
+        var _a, _b;
+        const amount = typeof cat.amount === 'number' ? cat.amount : 0;
+        // Try to get expense for this category from report.categories if available
+        const catExpense = (_b = (_a = (reportAny.categories || []).find((c) => String(c._id) === String(cat.categoryId))) === null || _a === void 0 ? void 0 : _a.totalExpense) !== null && _b !== void 0 ? _b : 0;
+        const percentageUsed = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
+        return {
+            category: cat.categoryId,
+            amount,
+            percentageUsed: percentageUsed,
+            spent: catExpense,
+        };
+    });
+    return {
+        month,
+        totalBudget,
+        totalExpense,
+        totalPercentageUsed,
+        categories,
+    };
+});
+exports.buildMonthlySummary = buildMonthlySummary;

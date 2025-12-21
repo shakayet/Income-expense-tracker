@@ -14,15 +14,18 @@ const router = express_1.default.Router();
 router.use((0, auth_1.default)(user_1.USER_ROLES.USER));
 // Route to get only monthly budget and month for a user
 router.get('/monthly-budget', budget_controller_1.getMonthlyBudgetAndMonth);
-router.use((0, auth_1.default)(user_1.USER_ROLES.USER));
 router.route('/monthly').post(budget_controller_1.setMonthlyBudget);
+// Accumulative POST for current month: body { category: string, amount: number }
+router.route('/current').post(budget_controller_1.postAccumulativeBudget); // -------> actual working route
+// Monthly summary: GET /budgets/monthly/:month
+router.route('/monthly/:month').get(budget_controller_1.getMonthlySummary);
 router.route('/simple-monthly-budget').post(budget_controller_1.postSimpleBudgetDetails);
-router.route('/simple-monthly-budget').get(budget_controller_1.getSimpleBudgetDetails);
+router.route('/simple-monthly-budget').get(budget_controller_1.getSimpleBudgetDetails); // --------> actual working route
 router
     .route('/monthly/:month')
     .patch((0, validateRequest_1.default)(budget_zod_1.updateMonthlyBudgetZodSchema), budget_controller_1.updateMonthlyBudget);
 router.route('/').post((0, validateRequest_1.default)(budget_zod_1.setBudgetZodSchema), budget_controller_1.setOrUpdateBudget);
-router.route('/:month').get(budget_controller_1.getBudgetDetails); //this route
+router.route('/:month').get(budget_controller_1.getBudgetDetails); // --------> actual working route
 router
     .route('/:month/category')
     .post((0, validateRequest_1.default)(budget_zod_1.addBudgetCategoryZodSchema), budget_controller_1.addBudgetCategory);

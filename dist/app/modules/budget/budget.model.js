@@ -37,8 +37,7 @@ exports.Budget = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const budgetCategorySchema = new mongoose_1.Schema({
     categoryId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Category',
+        type: String,
         required: [true, 'Category ID is required'],
     },
     amount: {

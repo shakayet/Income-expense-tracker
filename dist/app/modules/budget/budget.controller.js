@@ -12,12 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.postSimpleBudgetDetails = exports.getSimpleBudgetDetails = exports.getBudgetDetails = exports.deleteBudgetCategory = exports.updateBudgetCategory = exports.addBudgetCategory = exports.updateMonthlyBudget = exports.setMonthlyBudget = exports.setOrUpdateBudget = exports.getMonthlyBudgetAndMonth = void 0;
+exports.postSimpleBudgetDetails = exports.getSimpleBudgetDetails = exports.getMonthlySummary = exports.getBudgetDetails = exports.deleteBudgetCategory = exports.updateBudgetCategory = exports.addBudgetCategory = exports.updateMonthlyBudget = exports.setMonthlyBudget = exports.setOrUpdateBudget = exports.postAccumulativeBudget = exports.getMonthlyBudgetAndMonth = void 0;
 const budget_model_1 = require("./budget.model");
 const mongoose_1 = __importDefault(require("mongoose"));
 // import Expense from '../expense/expense.model';
 const process_1 = __importDefault(require("process"));
-require("./budget.service");
+const budget_service_1 = require("./budget.service");
 // Get only monthly budget and month for a user
 const getMonthlyBudgetAndMonth = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -53,6 +53,47 @@ const getMonthlyBudgetAndMonth = (req, res) => __awaiter(void 0, void 0, void 0,
     }
 });
 exports.getMonthlyBudgetAndMonth = getMonthlyBudgetAndMonth;
+// POST accumulative budget for current month
+const postAccumulativeBudget = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId)
+            return res.status(401).json({ message: 'Unauthorized' });
+        const { category, amount } = req.body;
+        if (!category || typeof category !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'category is required and must be a string',
+            });
+        }
+        if (amount === undefined || typeof amount !== 'number' || amount < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'amount is required and must be a non-negative number',
+            });
+        }
+        // Detect current month server-side
+        const now = new Date();
+        const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const budget = yield (0, budget_service_1.addOrIncrementCategory)(userId, month, category, amount);
+        // Trigger notifications check (reuse existing notifier)
+        try {
+            yield (0, budget_service_1.notifyOnBudgetThreshold)(userId, month);
+        }
+        catch (e) {
+            console.warn('notifyOnBudgetThreshold failed', e);
+        }
+        return res
+            .status(200)
+            .json({ success: true, message: 'Budget posted', data: budget });
+    }
+    catch (error) {
+        console.error('Error in postAccumulativeBudget:', error);
+        return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+});
+exports.postAccumulativeBudget = postAccumulativeBudget;
 // Set or update a budget with an array of categories
 const setOrUpdateBudget = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -68,21 +109,16 @@ const setOrUpdateBudget = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 message: 'Month and categories array are required',
             });
         }
-        // Convert all categoryId to ObjectId
+        // Ensure categoryId is a string and keep as string
         const parsedCategories = categories.map(cat => {
             if (!cat.categoryId || cat.amount === undefined) {
                 throw new Error('Each category must have categoryId and amount');
             }
-            // Always store as ObjectId
-            let categoryObjId = cat.categoryId;
-            if (typeof categoryObjId === 'string') {
-                if (!mongoose_1.default.Types.ObjectId.isValid(categoryObjId)) {
-                    throw new Error('Invalid categoryId format');
-                }
-                categoryObjId = new mongoose_1.default.Types.ObjectId(categoryObjId);
+            if (typeof cat.categoryId !== 'string') {
+                throw new Error('categoryId must be a string');
             }
             return {
-                categoryId: categoryObjId,
+                categoryId: cat.categoryId,
                 amount: cat.amount,
             };
         });
@@ -212,52 +248,31 @@ const addBudgetCategory = (req, res) => __awaiter(void 0, void 0, void 0, functi
                 message: 'Category ID and amount are required',
             });
         }
-        if (!mongoose_1.default.Types.ObjectId.isValid(categoryId)) {
+        if (typeof categoryId !== 'string' || !categoryId.trim()) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid Category ID format',
+                message: 'Invalid Category ID',
             });
         }
-        const categoryObjectId = new mongoose_1.default.Types.ObjectId(categoryId);
         let budget = yield budget_model_1.Budget.findOne({ userId, month });
         if (!budget) {
             budget = yield budget_model_1.Budget.create({
                 userId,
                 month,
-                categories: [{ categoryId: categoryObjectId, amount }],
+                categories: [{ categoryId, amount }],
             });
         }
         else {
-            // Ensure categories is always an array
             if (!Array.isArray(budget.categories)) {
                 budget.categories = [];
             }
-            // Prevent duplicate categoryId
-            const existingCategoryIndex = budget.categories.findIndex(cat => cat.categoryId &&
-                cat.categoryId.toString() === categoryObjectId.toString());
+            const existingCategoryIndex = budget.categories.findIndex(cat => cat.categoryId === categoryId);
             if (existingCategoryIndex !== -1) {
                 budget.categories[existingCategoryIndex].amount = amount;
             }
             else {
-                if (!categoryObjectId) {
-                    console.error('categoryObjectId is undefined! Payload:', req.body);
-                    return res.status(400).json({
-                        success: false,
-                        message: 'categoryObjectId is undefined. Check your request payload.',
-                    });
-                }
-                console.log('Adding category:', { categoryObjectId, amount });
-                // Remove any invalid categories before pushing
                 budget.categories = budget.categories.filter(cat => cat.categoryId);
-                // Always push as ObjectId
-                let catObjId = categoryObjectId;
-                if (typeof catObjId === 'string') {
-                    catObjId = new mongoose_1.default.Types.ObjectId(catObjId);
-                }
-                budget.categories.push({
-                    categoryId: catObjId,
-                    amount,
-                });
+                budget.categories.push({ categoryId, amount });
             }
             yield budget.save();
         }
@@ -293,7 +308,7 @@ const updateBudgetCategory = (req, res) => __awaiter(void 0, void 0, void 0, fun
                 .status(404)
                 .json({ success: false, message: 'Budget not found for this month' });
         }
-        const categoryIndex = (_b = budget.categories) === null || _b === void 0 ? void 0 : _b.findIndex(cat => cat.categoryId.toString() === categoryId);
+        const categoryIndex = (_b = budget.categories) === null || _b === void 0 ? void 0 : _b.findIndex(cat => cat.categoryId === categoryId);
         if (categoryIndex === undefined || categoryIndex === -1) {
             return res
                 .status(404)
@@ -339,7 +354,7 @@ const deleteBudgetCategory = (req, res) => __awaiter(void 0, void 0, void 0, fun
                 .json({ success: false, message: 'Budget not found for this month' });
         }
         const initialLength = (_b = budget.categories) === null || _b === void 0 ? void 0 : _b.length;
-        budget.categories = (_c = budget.categories) === null || _c === void 0 ? void 0 : _c.filter(cat => cat.categoryId.toString() !== categoryId);
+        budget.categories = (_c = budget.categories) === null || _c === void 0 ? void 0 : _c.filter(cat => cat.categoryId !== categoryId);
         if (!budget.categories || budget.categories.length === initialLength) {
             return res
                 .status(404)
@@ -521,7 +536,7 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                         },
                         {
                             $group: {
-                                _id: '$category',
+                                _id: '$source',
                                 totalSpent: { $sum: '$amount' },
                             },
                         },
@@ -580,7 +595,22 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                                                     {
                                                         $filter: {
                                                             input: '$expensesByCategory',
-                                                            cond: { $eq: ['$$this._id', '$$cat.categoryId'] },
+                                                            cond: {
+                                                                $eq: [
+                                                                    {
+                                                                        $toLower: {
+                                                                            $trim: {
+                                                                                input: { $toString: '$$this._id' },
+                                                                            },
+                                                                        },
+                                                                    },
+                                                                    {
+                                                                        $toLower: {
+                                                                            $trim: { input: '$$cat.categoryId' },
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
                                                         },
                                                     },
                                                     0,
@@ -671,13 +701,13 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                             { $sum: '$expensesByCategory.totalSpent' },
                         ],
                     },
-                    // effectiveTotalBudget: {
-                    //   $cond: [
-                    //     { $gt: ['$totalBudget', 0] },
-                    //     '$totalBudget',
-                    //     '$totalCategoryAmount',
-                    //   ],
-                    // },
+                    effectiveTotalBudget: {
+                        $cond: [
+                            { $gt: ['$totalBudget', 0] },
+                            '$totalBudget',
+                            '$totalCategoryAmount',
+                        ],
+                    },
                 },
             },
             // Projection
@@ -686,7 +716,10 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                     _id: 0,
                     month: 1,
                     // totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
-                    totalBudget: { $toString: { $round: ['$totalBudget', 2] } },
+                    totalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
+                    totalCategoryAmount: {
+                        $toString: { $round: ['$totalCategoryAmount', 2] },
+                    },
                     // totalCategoryAmount: {
                     //   $toString: { $round: ['$totalCategoryAmount', 2] },
                     // },
@@ -707,10 +740,10 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
                             $round: [
                                 {
                                     $cond: [
-                                        { $gt: ['$totalBudget', 0] },
+                                        { $gt: ['$effectiveTotalBudget', 0] },
                                         {
                                             $multiply: [
-                                                { $divide: ['$totalExpense', '$totalBudget'] },
+                                                { $divide: ['$totalExpense', '$effectiveTotalBudget'] },
                                                 100,
                                             ],
                                         },
@@ -821,6 +854,41 @@ const getBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.getBudgetDetails = getBudgetDetails;
+// GET monthly summary: /budgets/monthly/:month
+const getMonthlySummary = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a.id;
+        if (!userId)
+            return res.status(401).json({ message: 'Unauthorized' });
+        const { month } = req.params;
+        if (!month || typeof month !== 'string')
+            return res.status(400).json({ message: 'month param required' });
+        const summary = yield (0, budget_service_1.buildMonthlySummary)(userId, month);
+        // Format response according to spec
+        const categories = (summary.categories || []).map(c => {
+            var _a;
+            return ({
+                category: c.category,
+                amount: Number(c.amount),
+                percentageUsed: Number((((_a = c.amount) !== null && _a !== void 0 ? _a : 0) / (summary.totalBudget || 1)) * 100),
+            });
+        });
+        const resp = {
+            month: summary.month,
+            totalBudget: Number(summary.totalBudget || 0),
+            totalExpense: Number(summary.totalExpense || 0),
+            totalPercentageUsed: Number(summary.totalPercentageUsed || 0),
+            categories,
+        };
+        return res.json({ success: true, data: resp });
+    }
+    catch (error) {
+        console.error('Error in getMonthlySummary:', error);
+        return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+});
+exports.getMonthlySummary = getMonthlySummary;
 const getSimpleBudgetDetails = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
