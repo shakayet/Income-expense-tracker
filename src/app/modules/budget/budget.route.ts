@@ -1,6 +1,8 @@
 import express from 'express';
 import {
   setOrUpdateBudget,
+  updateBudget,
+  deleteBudget,
   getBudgetDetails,
   postAccumulativeBudget,
   addBudgetCategory,
@@ -20,6 +22,7 @@ import {
   updateBudgetCategoryZodSchema,
   // setMonthlyBudgetZodSchema,
   updateMonthlyBudgetZodSchema,
+  updateBudgetZodSchema,
 } from './budget.zod';
 import auth from '../../middlewares/auth';
 import { USER_ROLES } from '../../../enums/user';
@@ -40,14 +43,18 @@ router.route('/current').post(postAccumulativeBudget); // -------> actual workin
 router.route('/monthly/:month').get(getMonthlySummary);
 
 router.route('/simple-monthly-budget').post(postSimpleBudgetDetails);
-router.route('/simple-monthly-budget').get(getSimpleBudgetDetails);  // --------> actual working route
+router.route('/simple-monthly-budget').get(getSimpleBudgetDetails); // --------> actual working route
 
 router
   .route('/monthly/:month')
   .patch(validateRequest(updateMonthlyBudgetZodSchema), updateMonthlyBudget);
 
 router.route('/').post(validateRequest(setBudgetZodSchema), setOrUpdateBudget);
-router.route('/:month').get(getBudgetDetails); // --------> actual working route
+router
+  .route('/:month')
+  .get(getBudgetDetails)
+  .put(validateRequest(updateBudgetZodSchema), updateBudget)
+  .delete(deleteBudget); //actual working route
 
 router
   .route('/:month/category')

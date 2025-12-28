@@ -1,6 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
 export type IBudgetCategory = {
+  _id?: mongoose.Types.ObjectId | string;
   categoryId?: string;
   amount: number;
 };
@@ -15,19 +16,16 @@ export type IBudget = {
   updatedAt: Date;
 };
 
-const budgetCategorySchema = new Schema<IBudgetCategory>(
-  {
-    categoryId: {
-      type: String,
-    },
-    amount: {
-      type: Number,
-      required: [true, 'Amount is required'],
-      min: [0, 'Amount cannot be negative'],
-    },
+const budgetCategorySchema = new Schema<IBudgetCategory>({
+  categoryId: {
+    type: String,
   },
-  { _id: false }
-);
+  amount: {
+    type: Number,
+    required: [true, 'Amount is required'],
+    min: [0, 'Amount cannot be negative'],
+  },
+});
 
 const budgetSchema = new Schema<IBudget>(
   {

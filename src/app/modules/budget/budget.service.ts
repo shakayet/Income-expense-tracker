@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Get only monthly budget and month for a user
 import { createNotification } from '../notification/notification.service';
 import { getMonthlyReport } from '../reports/report.service';

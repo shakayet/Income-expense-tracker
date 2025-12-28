@@ -57,12 +57,6 @@ export const postAccumulativeBudget = async (req: Request, res: Response) => {
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
     const { category, amount } = req.body;
-    if (!category || typeof category !== 'string') {
-      return res.status(400).json({
-        success: false,
-        message: 'category is required and must be a string',
-      });
-    }
     if (amount === undefined || typeof amount !== 'number' || amount < 0) {
       return res.status(400).json({
         success: false,
@@ -77,12 +71,20 @@ export const postAccumulativeBudget = async (req: Request, res: Response) => {
       '0'
     )}`;
 
-    const budget = await addOrIncrementCategory(
-      userId,
-      month,
-      category,
-      amount
-    );
+    let budget;
+    // If category provided, treat as accumulative category budget increment
+    if (category && typeof category === 'string' && category.trim()) {
+      budget = await addOrIncrementCategory(userId, month, category, amount);
+    } else {
+      // No category provided: add to an "Uncategorized" category
+      const uncategorizedId = 'Uncategorized';
+      budget = await addOrIncrementCategory(
+        userId,
+        month,
+        uncategorizedId,
+        amount
+      );
+    }
 
     // Trigger notifications check (reuse existing notifier)
     try {
@@ -91,9 +93,15 @@ export const postAccumulativeBudget = async (req: Request, res: Response) => {
       console.warn('notifyOnBudgetThreshold failed', e);
     }
 
-    return res
-      .status(200)
-      .json({ success: true, message: 'Budget posted', data: budget });
+    return res.status(200).json({
+      success: true,
+      message: 'Budget posted',
+      data: (() => {
+        const obj: any = JSON.parse(JSON.stringify(budget));
+        delete obj.totalBudget;
+        return obj;
+      })(),
+    });
   } catch (error) {
     console.error('Error in postAccumulativeBudget:', error);
     return res.status(500).json({ success: false, message: 'Server Error' });
@@ -107,41 +115,64 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
     if (!userId) {
       return res.status(401).json({ message: 'Unauthorized' });
     }
-    const { month, categories } = req.body;
-    if (!month || !Array.isArray(categories)) {
+    const { month, categories, totalBudget } = req.body;
+
+    if (!month || typeof month !== 'string') {
       return res.status(400).json({
         success: false,
-        message: 'Month and categories array are required',
+        message: 'Month is required and must be a string in YYYY-MM format',
       });
     }
-    // Ensure categoryId is a string and keep as string
-    const parsedCategories = categories.map(cat => {
-      if (!cat.categoryId || cat.amount === undefined) {
-        throw new Error('Each category must have categoryId and amount');
-      }
-      if (typeof cat.categoryId !== 'string') {
-        throw new Error('categoryId must be a string');
-      }
-      return {
-        categoryId: cat.categoryId,
-        amount: cat.amount,
-      };
-    });
+
+    if (
+      (!Array.isArray(categories) || categories.length === 0) &&
+      totalBudget === undefined
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Either non-empty categories array or totalBudget must be provided',
+      });
+    }
+
+    let parsedCategories: any[] | undefined;
+    if (Array.isArray(categories)) {
+      parsedCategories = categories.map((cat: any) => {
+        if (!cat.categoryId || cat.amount === undefined) {
+          throw new Error('Each category must have categoryId and amount');
+        }
+        if (typeof cat.categoryId !== 'string') {
+          throw new Error('categoryId must be a string');
+        }
+        return {
+          categoryId: cat.categoryId,
+          amount: cat.amount,
+        };
+      });
+    }
+
     let budget = await Budget.findOne({ userId, month });
     if (budget) {
-      budget.categories = parsedCategories;
+      if (parsedCategories) budget.categories = parsedCategories as any;
+      if (totalBudget !== undefined) budget.totalBudget = totalBudget;
       await budget.save();
     } else {
       budget = await Budget.create({
         userId,
         month,
-        categories: parsedCategories,
+        categories: parsedCategories ?? [],
+        totalBudget: totalBudget,
       });
     }
+
     res.status(200).json({
       success: true,
-      message: 'Budget categories set successfully',
-      data: budget,
+      message: 'Budget saved successfully',
+      data: (() => {
+        const obj: any = JSON.parse(JSON.stringify(budget));
+        delete obj.totalBudget;
+        return obj;
+      })(),
     });
   } catch (error) {
     console.error('Error setting budget categories:', error);
@@ -150,6 +181,188 @@ export const setOrUpdateBudget = async (req: Request, res: Response) => {
       message: 'Failed to set budget categories',
       error: process.env.NODE_ENV === 'development' ? error : {},
     });
+  }
+};
+
+// Update or replace a budget for a given month (PUT /:month)
+export const updateBudget = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { month } = req.params;
+    const {
+      categories,
+      totalBudget,
+      categoryId: bodyCategoryId,
+      category: bodyCategory,
+      categoryDocId,
+      _id: bodySubId,
+      amount: bodyAmount,
+    } = req.body;
+
+    if (!month || typeof month !== 'string') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Month param required' });
+    }
+
+    // If a single category identifier is provided, treat this as a category-level update
+    const categoryIdentifier =
+      bodyCategoryId || bodyCategory || categoryDocId || bodySubId;
+
+    if (categoryIdentifier) {
+      if (bodyAmount === undefined || typeof bodyAmount !== 'number') {
+        return res.status(400).json({
+          success: false,
+          message:
+            'amount is required to update a category and must be a number',
+        });
+      }
+
+      const budget = await Budget.findOne({ userId, month });
+      if (!budget) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'Budget not found' });
+      }
+
+      const idx = budget.categories?.findIndex(cat => {
+        if (!cat) return false;
+        if (cat._id && String(cat._id) === String(categoryIdentifier))
+          return true;
+        return cat.categoryId === categoryIdentifier;
+      });
+
+      if (idx === undefined || idx === -1) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'Category not found in budget' });
+      }
+
+      budget.categories![idx].amount = bodyAmount;
+      await budget.save();
+
+      return res.status(200).json({
+        success: true,
+        message: `Budget category '${categoryIdentifier}' updated successfully`,
+        data: {
+          month: budget.month,
+          totalCategoryAmount: budget.totalCategoryAmount,
+          categories: budget.categories,
+          updatedCategory: {
+            categoryId: categoryIdentifier,
+            amount: bodyAmount,
+          },
+        },
+      });
+    }
+
+    // Bulk update (replace categories array) or update totalBudget
+    if (
+      (!Array.isArray(categories) || categories.length === 0) &&
+      totalBudget === undefined
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'Either non-empty categories array or totalBudget must be provided',
+      });
+    }
+
+    let parsedCategories: any[] | undefined;
+    if (Array.isArray(categories)) {
+      parsedCategories = categories.map((cat: any) => {
+        if (!cat.categoryId || cat.amount === undefined) {
+          throw new Error('Each category must have categoryId and amount');
+        }
+        return { categoryId: String(cat.categoryId), amount: cat.amount };
+      });
+    }
+
+    const budget = await Budget.findOne({ userId, month });
+    if (!budget) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Budget not found' });
+    }
+
+    if (parsedCategories) budget.categories = parsedCategories as any;
+    if (totalBudget !== undefined) budget.totalBudget = totalBudget;
+    await budget.save();
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'Budget updated', data: budget });
+  } catch (error) {
+    console.error('Error updating budget:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
+  }
+};
+
+// Delete a budget for a given month
+export const deleteBudget = async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as { id?: string } | undefined)?.id;
+    if (!userId) return res.status(401).json({ message: 'Unauthorized' });
+
+    const { month } = req.params;
+    if (!month || typeof month !== 'string')
+      return res.status(400).json({ message: 'month param required' });
+
+    // If a category identifier is provided in body or query, delete that category only
+    const categoryIdentifier =
+      (req.body &&
+        (req.body.categoryId || req.body.category || req.body._id)) ||
+      req.query.categoryId ||
+      req.query.category;
+
+    if (categoryIdentifier) {
+      const budget = await Budget.findOne({ userId, month });
+      if (!budget)
+        return res
+          .status(404)
+          .json({ success: false, message: 'Budget not found' });
+
+      const idx = budget.categories?.findIndex(cat => {
+        if (!cat) return false;
+        if (cat._id && String(cat._id) === String(categoryIdentifier))
+          return true;
+        return cat.categoryId === categoryIdentifier;
+      });
+
+      if (idx === undefined || idx === -1) {
+        return res
+          .status(404)
+          .json({ success: false, message: 'Category not found in budget' });
+      }
+
+      budget.categories!.splice(idx, 1);
+      await budget.save();
+
+      return res.status(200).json({
+        success: true,
+        message: `Budget category '${categoryIdentifier}' deleted successfully`,
+        data: {
+          month: budget.month,
+          totalCategoryAmount: budget.totalCategoryAmount,
+          categories: budget.categories,
+        },
+      });
+    }
+
+    const budget = await Budget.findOneAndDelete({ userId, month });
+    if (!budget)
+      return res
+        .status(404)
+        .json({ success: false, message: 'Budget not found' });
+
+    return res
+      .status(200)
+      .json({ success: true, message: 'Budget deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting budget:', error);
+    return res.status(500).json({ success: false, message: 'Server Error' });
   }
 };
 
@@ -304,7 +517,9 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { month, categoryId } = req.params;
+    const { month } = req.params;
+    const categoryId =
+      (req.params as any).category || (req.params as any).categoryId;
     const { amount } = req.body;
 
     const budget = await Budget.findOne({ userId, month });
@@ -314,9 +529,12 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
         .json({ success: false, message: 'Budget not found for this month' });
     }
 
-    const categoryIndex = budget.categories?.findIndex(
-      cat => cat.categoryId === categoryId
-    );
+    const categoryIndex = budget.categories?.findIndex(cat => {
+      if (!cat) return false;
+      // Match by subdocument _id first, then by categoryId string
+      if (cat._id && String(cat._id) === String(categoryId)) return true;
+      return cat.categoryId === categoryId;
+    });
 
     if (categoryIndex === undefined || categoryIndex === -1) {
       return res
@@ -332,7 +550,7 @@ export const updateBudgetCategory = async (req: Request, res: Response) => {
       message: `Budget category '${categoryId}' updated successfully`,
       data: {
         month: budget.month,
-        totalBudget: budget.totalBudget,
+        // totalBudget: budget.totalBudget,
         totalCategoryAmount: budget.totalCategoryAmount,
         categories: budget.categories,
         updatedCategory: { categoryId, amount },
@@ -356,7 +574,9 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { month, categoryId } = req.params;
+    const { month } = req.params;
+    const categoryId =
+      (req.params as any).category || (req.params as any).categoryId;
 
     const budget = await Budget.findOne({ userId, month });
     if (!budget) {
@@ -365,17 +585,21 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
         .json({ success: false, message: 'Budget not found for this month' });
     }
 
-    const initialLength = budget.categories?.length;
-    budget.categories = budget.categories?.filter(
-      cat => cat.categoryId !== categoryId
-    );
+    const initialLength = budget.categories?.length ?? 0;
+    const idx = budget.categories?.findIndex(cat => {
+      if (!cat) return false;
+      if (cat._id && String(cat._id) === String(categoryId)) return true;
+      return cat.categoryId === categoryId;
+    });
 
-    if (!budget.categories || budget.categories.length === initialLength) {
+    if (idx === undefined || idx === -1) {
       return res
         .status(404)
         .json({ success: false, message: 'Category not found in budget' });
     }
 
+    // remove the found category
+    budget.categories!.splice(idx, 1);
     await budget.save();
 
     res.status(200).json({
@@ -397,130 +621,6 @@ export const deleteBudgetCategory = async (req: Request, res: Response) => {
     });
   }
 };
-
-// Get budget details, including expense tracking
-// export const getBudgetDetails = async (req: Request, res: Response) => {
-//   try {
-//     const userId = (req.user as { id?: string } | undefined)?.id;
-//     if (!userId) {
-//       return res.status(401).json({ message: 'Unauthorized' });
-//     }
-
-//     const month = req.params.month;
-
-//     const budget = await getBudgetByUserAndMonth(userId, month);
-
-//     if (!budget) {
-//       return res
-//         .status(404)
-//         .json({ success: false, message: 'Budget not set for this month' });
-//     }
-
-//     // Calculate total expenses for the month grouped by category
-//     const expensesAgg = await Expense.aggregate([
-//       {
-//         $match: {
-//           userId: new mongoose.Types.ObjectId(userId),
-//           createdAt: {
-//             $gte: new Date(`${month}-01T00:00:00Z`),
-//             $lt: new Date(
-//               new Date(`${month}-01T00:00:00Z`).setMonth(
-//                 new Date(`${month}-01T00:00:00Z`).getMonth() + 1
-//               )
-//             ),
-//           },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: '$category',
-//           totalExpense: { $sum: '$amount' },
-//         },
-//       },
-//     ]);
-
-//     // Convert _id (category ObjectId) to string for keys in map
-//     const expenseMap = new Map(
-//       expensesAgg.map(exp => [exp._id?.toString(), exp.totalExpense])
-//     );
-
-//     const totalExpense = expensesAgg.reduce(
-//       (sum, exp) => sum + exp.totalExpense,
-//       0
-//     );
-
-//     console.log('Expense Map keys:', [...expenseMap.keys()]);
-
-//     const effectiveTotalBudget = budget.totalBudget ?? budget.totalCategoryAmount;
-//     const totalRemaining = (effectiveTotalBudget ?? 0) - totalExpense;
-//     const totalPercentageUsed =
-//       effectiveTotalBudget && effectiveTotalBudget > 0
-//         ? (totalExpense / effectiveTotalBudget) * 100
-//         : 0;
-
-//     // Normalize all categoryIds to strings for matching
-//     const categories = (budget.categories ?? []).map(cat => ({
-//       ...cat,
-//       categoryId: cat.categoryId?.toString(),
-//     }));
-
-//     console.log('Budget categories:', categories.map(c => c.categoryId));
-
-//     const categoryDetails = categories.map(budgetCategory => {
-//       const amount =
-//         typeof budgetCategory.amount === 'number' ? budgetCategory.amount : 0;
-//       const spent = expenseMap.get(budgetCategory.categoryId) ?? 0;
-//       const remaining = amount - spent;
-//       const percentageUsed = amount > 0 ? (spent / amount) * 100 : 0;
-//       const percentageOfTotalBudget =
-//         effectiveTotalBudget && effectiveTotalBudget > 0
-//           ? (amount / effectiveTotalBudget) * 100
-//           : 0;
-
-//       return {
-//         categoryId: budgetCategory.categoryId,
-//         budgetAmount: amount.toFixed(2),
-//         spent: spent.toFixed(2),
-//         remaining: remaining.toFixed(2),
-//         percentageUsed: percentageUsed.toFixed(2),
-//         percentageOfTotalBudget: percentageOfTotalBudget.toFixed(2),
-//         status:
-//           percentageUsed >= 100
-//             ? 'exceeded'
-//             : percentageUsed >= 80
-//             ? 'warning'
-//             : 'good',
-//       };
-//     });
-
-//     res.status(200).json({
-//       success: true,
-//       data: {
-//         month,
-//         totalBudget: budget.totalBudget?.toFixed(2) ?? null,
-//         totalCategoryAmount: budget.totalCategoryAmount?.toFixed(2) ?? null,
-//         effectiveTotalBudget: effectiveTotalBudget?.toFixed(2) ?? '0.00',
-//         totalExpense: totalExpense.toFixed(2),
-//         totalRemaining: totalRemaining.toFixed(2),
-//         totalPercentageUsed: totalPercentageUsed.toFixed(2),
-//         totalPercentageLeft: (100 - totalPercentageUsed).toFixed(2),
-//         categories: categoryDetails,
-//         summary: {
-//           totalCategories: categories.length,
-//           categoriesExceeded: categoryDetails.filter(cat => cat.status === 'exceeded').length,
-//           categoriesInWarning: categoryDetails.filter(cat => cat.status === 'warning').length,
-//           categoriesGood: categoryDetails.filter(cat => cat.status === 'good').length,
-//           budgetType: budget.totalBudget ? 'monthly_budget_set' : 'category_budgets_only',
-//         },
-//       },
-//     });
-//   } catch (error) {
-//     console.error('Error getting budget details:', error);
-//     res
-//       .status(500)
-//       .json({ success: false, message: 'Failed to get budget details', error });
-//   }
-// };
 
 export const getBudgetDetails = async (req: Request, res: Response) => {
   const userId = (req.user as { id?: string } | undefined)?.id;
@@ -617,6 +717,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               input: { $ifNull: ['$categories', []] },
               as: 'cat',
               in: {
+                _id: '$$cat._id',
                 categoryId: '$$cat.categoryId',
                 amount: '$$cat.amount',
                 spent: {
@@ -665,6 +766,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               input: '$categories',
               as: 'cat',
               in: {
+                _id: '$$cat._id',
                 categoryId: '$$cat.categoryId',
                 budgetAmount: '$$cat.amount',
                 spent: '$$cat.spent',
@@ -748,7 +850,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
           _id: 0,
           month: 1,
           // totalIncome: { $toString: '$totalIncome' }, // 🔹 new field
-          totalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
+          // totalBudget: { $toString: { $round: ['$effectiveTotalBudget', 2] } },
           totalCategoryAmount: {
             $toString: { $round: ['$totalCategoryAmount', 2] },
           },
@@ -821,6 +923,7 @@ export const getBudgetDetails = async (req: Request, res: Response) => {
               as: 'cat',
               in: {
                 categoryId: { $toString: '$$cat.categoryId' },
+                id: { $toString: '$$cat._id' },
                 budgetAmount: {
                   $toString: { $round: ['$$cat.budgetAmount', 2] },
                 },
@@ -909,7 +1012,7 @@ export const getMonthlySummary = async (req: Request, res: Response) => {
 
     const resp = {
       month: summary.month,
-      totalBudget: Number(summary.totalBudget || 0),
+      // totalBudget: Number(summary.totalBudget || 0),
       totalExpense: Number(summary.totalExpense || 0),
       totalPercentageUsed: Number(summary.totalPercentageUsed || 0),
       categories,
