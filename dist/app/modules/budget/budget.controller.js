@@ -868,39 +868,45 @@ const getBudgetDetails = (req, res) =>
                     ],
                   },
                   status: {
-                    $switch: {
-                      branches: [
-                        {
-                          case: {
-                            $gt: [
-                              {
-                                $multiply: [
-                                  { $divide: ['$$cat.spent', '$$cat.amount'] },
+                    $cond: [
+                      { $gt: ['$$cat.amount', 0] },
+                      {
+                        $switch: {
+                          branches: [
+                            {
+                              case: {
+                                $gt: [
+                                  {
+                                    $multiply: [
+                                      { $divide: ['$$cat.spent', '$$cat.amount'] },
+                                      100,
+                                    ],
+                                  },
                                   100,
                                 ],
                               },
-                              100,
-                            ],
-                          },
-                          then: 'exceeded',
-                        },
-                        {
-                          case: {
-                            $gt: [
-                              {
-                                $multiply: [
-                                  { $divide: ['$$cat.spent', '$$cat.amount'] },
-                                  100,
+                              then: 'exceeded',
+                            },
+                            {
+                              case: {
+                                $gt: [
+                                  {
+                                    $multiply: [
+                                      { $divide: ['$$cat.spent', '$$cat.amount'] },
+                                      100,
+                                    ],
+                                  },
+                                  80,
                                 ],
                               },
-                              80,
-                            ],
-                          },
-                          then: 'warning',
+                              then: 'warning',
+                            },
+                          ],
+                          default: 'good',
                         },
-                      ],
-                      default: 'good',
-                    },
+                      },
+                      'good',
+                    ],
                   },
                 },
               },
