@@ -8,18 +8,27 @@ import validateRequest from '../../middlewares/validateRequest';
 const router = express.Router();
 
 router.get(
+  '/latest',
+  // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  MarketplacecredentialController.getLatestMarketplacecredentialsByName
+);
+
+router.get(
   '/:id',
   // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
   MarketplacecredentialController.getSingleMarketplacecredential
+);
+router.get(
+  '/',
+  // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  MarketplacecredentialController.getAllMarketplacecredentials
 );
 
 router.post(
   '/',
   // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 
-  validateRequest(
-    MarketplacecredentialValidations.create
-  ),
+  validateRequest(MarketplacecredentialValidations.create),
   MarketplacecredentialController.createMarketplacecredential
 );
 
@@ -27,9 +36,7 @@ router.patch(
   '/:id',
   // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 
-  validateRequest(
-    MarketplacecredentialValidations.update
-  ),
+  validateRequest(MarketplacecredentialValidations.update),
   MarketplacecredentialController.updateMarketplacecredential
 );
 

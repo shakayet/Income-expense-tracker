@@ -6,64 +6,111 @@ import { StatusCodes } from 'http-status-codes';
 import pick from '../../../shared/pick';
 import { marketplacecredentialFilterables } from './marketplacecredential.constants';
 
-const createMarketplacecredential = catchAsync(async (req: Request, res: Response) => {
-  const marketplacecredentialData = req.body;
+const createMarketplacecredential = catchAsync(
+  async (req: Request, res: Response) => {
+    const marketplacecredentialData = req.body;
 
-  const result = await MarketplacecredentialServices.createMarketplacecredential(
-    req.user!,
-    marketplacecredentialData
-  );
+    const result =
+      await MarketplacecredentialServices.createMarketplacecredential(
+        req.user!,
+        marketplacecredentialData
+      );
 
-  sendResponse(res, {
-    statusCode: StatusCodes.CREATED,
-    success: true,
-    message: 'Marketplacecredential created successfully',
-    data: result,
-  });
-});
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      message: 'Marketplacecredential created successfully',
+      data: result,
+    });
+  }
+);
 
-const updateMarketplacecredential = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const marketplacecredentialData = req.body;
+const getAllMarketplacecredentials = catchAsync(
+  async (req: Request, res: Response) => {
+    const result =
+      await MarketplacecredentialServices.getAllMarketplacecredentials();
 
-  const result = await MarketplacecredentialServices.updateMarketplacecredential(id, marketplacecredentialData);
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      message: 'Marketplacecredential created successfully',
+      data: result,
+    });
+  }
+);
 
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: 'Marketplacecredential updated successfully',
-    data: result,
-  });
-});
+const getLatestMarketplacecredentialsByName = catchAsync(
+  async (req: Request, res: Response) => {
+    const { marketplaceName } = req.body;
+    const result =
+      await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+        { name: marketplaceName }
+      );
 
-const getSingleMarketplacecredential = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const result = await MarketplacecredentialServices.getSingleMarketplacecredential(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.CREATED,
+      success: true,
+      message: 'Marketplacecredential created successfully',
+      data: result,
+    });
+  }
+);
 
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: 'Marketplacecredential retrieved successfully',
-    data: result,
-  });
-});
+const updateMarketplacecredential = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const marketplacecredentialData = req.body;
 
+    const result =
+      await MarketplacecredentialServices.updateMarketplacecredential(
+        id,
+        marketplacecredentialData
+      );
 
-const deleteMarketplacecredential = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const result = await MarketplacecredentialServices.deleteMarketplacecredential(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Marketplacecredential updated successfully',
+      data: result,
+    });
+  }
+);
 
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: 'Marketplacecredential deleted successfully',
-    data: result,
-  });
-});
+const getSingleMarketplacecredential = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result =
+      await MarketplacecredentialServices.getSingleMarketplacecredential(id);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Marketplacecredential retrieved successfully',
+      data: result,
+    });
+  }
+);
+
+const deleteMarketplacecredential = catchAsync(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const result =
+      await MarketplacecredentialServices.deleteMarketplacecredential(id);
+
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Marketplacecredential deleted successfully',
+      data: result,
+    });
+  }
+);
 
 export const MarketplacecredentialController = {
   createMarketplacecredential,
   updateMarketplacecredential,
+  getAllMarketplacecredentials,
   getSingleMarketplacecredential,
   deleteMarketplacecredential,
+  getLatestMarketplacecredentialsByName,
 };
