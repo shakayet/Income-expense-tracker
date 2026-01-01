@@ -14,6 +14,7 @@ import {
 } from './util';
 import { SearchTypeModel } from './marketplace.model';
 import { genericSearch } from '../scraping/affiliate.service';
+import { MarketplacecredentialServices } from '../marketplacecredential/marketplacecredential.service';
 
 const updateMarketplace = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -60,12 +61,32 @@ export async function searchProduct(req: Request, res: Response) {
     if (searchType?.type === 'API') {
       console.log('🔍 Performing API-based search...');
 
-      const [amazon, ebay] = await Promise.all([
-        getCheapestAmazonProducts(query),
-        getTopCheapestProductsFromEbay(query),
-      ]);
+      try {
+        // Fetch credentials from database
+        const [amazonCreds, ebayCreds] = await Promise.all([
+          MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
+            name: 'amazon',
+          }),
+          MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
+            name: 'ebay',
+          }),
+        ]);
 
-      result = { amazon, ebay };
+        const [amazon, ebay] = await Promise.all([
+          getCheapestAmazonProducts(query, 5, amazonCreds.clientId),
+          getTopCheapestProductsFromEbay(
+            query,
+            5,
+            ebayCreds.clientId,
+            ebayCreds.clientSecret
+          ),
+        ]);
+
+        result = { amazon, ebay };
+      } catch (credError) {
+        console.error('Error fetching credentials:', credError);
+        result = { error: 'Failed to fetch marketplace credentials' };
+      }
     }
 
     // ==============================
@@ -132,9 +153,21 @@ export const getSingleProduct = catchAsync(
     let result;
 
     if (source === 'ebay') {
-      result = await getSingleProductFromEbay(id);
+      const ebayCreds =
+        await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+          { name: 'ebay' }
+        );
+      result = await getSingleProductFromEbay(
+        id,
+        ebayCreds.clientId,
+        ebayCreds.clientSecret
+      );
     } else if (source === 'amazon') {
-      result = await getSingleAmazonProduct(id);
+      const amazonCreds =
+        await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+          { name: 'amazon' }
+        );
+      result = await getSingleAmazonProduct(id, amazonCreds.clientId);
     }
 
     sendResponse(res, {

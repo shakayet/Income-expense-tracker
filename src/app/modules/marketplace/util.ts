@@ -6,7 +6,8 @@
 import axios from 'axios';
 import config from '../../../config';
 
-const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
+const API_KEY = '';
+// const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
 
 type AmazonProduct = {
   title: string;
@@ -14,17 +15,19 @@ type AmazonProduct = {
   image: string;
   rating: number;
   url: string;
-}
+};
 
 export const getAmazonProduct = async (
-  asin: string
+  asin: string,
+  apiKey: string = API_KEY
 ): Promise<AmazonProduct> => {
+  console.log({ asin, apiKey });
   const res = await axios.get(
     'https://real-time-amazon-data.p.rapidapi.com/product',
     {
       params: { asin, country: 'US' },
       headers: {
-        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Key': apiKey,
         'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
       },
     }
@@ -42,7 +45,8 @@ export const getAmazonProduct = async (
 
 export const getCheapestAmazonProducts = async (
   query: string,
-  top: number = 5
+  top: number = 5,
+  apiKey: string = API_KEY
 ): Promise<AmazonProduct[]> => {
   const res = await axios.get(
     'https://real-time-amazon-data.p.rapidapi.com/search',
@@ -80,7 +84,8 @@ export const getCheapestAmazonProducts = async (
 };
 
 export const getSingleAmazonProduct = async (
-  asin: string
+  asin: string,
+  apiKey: string = API_KEY
 ): Promise<AmazonProduct | null> => {
   try {
     // Use search endpoint as fallback
@@ -118,12 +123,16 @@ export const getSingleAmazonProduct = async (
 
 const OAUTH_URL = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
 
-async function getAppAccessToken(): Promise<string> {
+async function getAppAccessToken(
+  clientId?: string,
+  clientSecret?: string
+): Promise<string> {
   const creds = Buffer.from(
-    `${config.ebay.client_id}:${config.ebay.client_secret}`
+    `${clientId || config.ebay.client_id}:${
+      clientSecret || config.ebay.client_secret
+    }`
   ).toString('base64');
 
-  
   try {
     const res = await axios.post(
       OAUTH_URL,
@@ -146,20 +155,25 @@ async function getAppAccessToken(): Promise<string> {
   }
 }
 
-async function searchProducts(query: string, limit = 10) {
-  const token = await getAppAccessToken();
+async function searchProducts(
+  query: string,
+  limit = 10,
+  clientId?: string,
+  clientSecret?: string
+) {
+  const token = await getAppAccessToken(clientId, clientSecret);
   console.log({ token });
-  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-
+  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+    query
+  )}&limit=${limit}`;
 
   try {
     const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log({res : res})
+    console.log({ res: res });
     return res.data;
   } catch (err: any) {
-
     console.error(
       'Error fetching eBay products:',
       err.response?.data || err.message
@@ -168,13 +182,17 @@ async function searchProducts(query: string, limit = 10) {
   }
 }
 
-export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
+export async function getTopCheapestProductsFromEbay(
+  query: string,
+  top = 5,
+  clientId?: string,
+  clientSecret?: string
+) {
+  const data = await searchProducts(query, 50, clientId, clientSecret); // your search API
 
-  const data = await searchProducts(query, 50); // your search API
+  console.log({ data: data.itemSummaries });
 
-  console.log({data : data.itemSummaries})
-
-  const token = await getAppAccessToken();
+  const token = await getAppAccessToken(clientId, clientSecret);
 
   if (!data.itemSummaries || data.itemSummaries.length === 0) return [];
 
@@ -221,8 +239,12 @@ export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
   return products;
 }
 
-export async function getSingleProductFromEbay(itemId: string) {
-  const token = await getAppAccessToken();
+export async function getSingleProductFromEbay(
+  itemId: string,
+  clientId?: string,
+  clientSecret?: string
+) {
+  const token = await getAppAccessToken(clientId, clientSecret);
 
   // Construct the API URL
   const url = `https://api.sandbox.ebay.com/buy/browse/v1/item/${encodeURIComponent(
