@@ -53,7 +53,7 @@ export const getCheapestAmazonProducts = async (
     {
       params: { query, limit: 20, country: 'US' },
       headers: {
-        'X-RapidAPI-Key': API_KEY,
+        'X-RapidAPI-Key': apiKey,
         'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
       },
     }
@@ -94,7 +94,7 @@ export const getSingleAmazonProduct = async (
       {
         params: { query: asin, limit: 1, country: 'US' },
         headers: {
-          'X-RapidAPI-Key': API_KEY,
+          'X-RapidAPI-Key': apiKey,
           'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
         },
       }

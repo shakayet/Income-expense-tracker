@@ -21,6 +21,7 @@ const http_status_codes_1 = require("http-status-codes");
 const util_1 = require("./util");
 const marketplace_model_1 = require("./marketplace.model");
 const affiliate_service_1 = require("../scraping/affiliate.service");
+const marketplacecredential_service_1 = require("../marketplacecredential/marketplacecredential.service");
 const updateMarketplace = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const marketplaceData = req.body;
@@ -56,11 +57,46 @@ function searchProduct(req, res) {
             // ==============================
             if ((searchType === null || searchType === void 0 ? void 0 : searchType.type) === 'API') {
                 console.log('🔍 Performing API-based search...');
-                const [amazon, ebay] = yield Promise.all([
-                    (0, util_1.getCheapestAmazonProducts)(query),
-                    (0, util_1.getTopCheapestProductsFromEbay)(query),
-                ]);
-                result = { amazon, ebay };
+                let amazonResult = null;
+                let ebayResult = null;
+                let errors = [];
+                // Fetch Amazon credentials
+                try {
+                    const amazonCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
+                        name: 'amazon',
+                    });
+                    console.log('Amazon creds found:', !!amazonCreds);
+                    amazonResult = yield (0, util_1.getCheapestAmazonProducts)(query, 5, amazonCreds.clientId);
+                }
+                catch (error) {
+                    console.error('Error fetching Amazon credentials or searching:', error);
+                    errors.push('amazon');
+                }
+                // Fetch eBay credentials
+                try {
+                    const ebayCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
+                        name: 'ebay',
+                    });
+                    console.log('eBay creds found:', !!ebayCreds);
+                    ebayResult = yield (0, util_1.getTopCheapestProductsFromEbay)(query, 5, ebayCreds.clientId, ebayCreds.clientSecret);
+                }
+                catch (error) {
+                    console.error('Error fetching eBay credentials or searching:', error);
+                    errors.push('ebay');
+                }
+                // Build result based on what succeeded
+                result = {};
+                if (amazonResult)
+                    result.amazon = amazonResult;
+                if (ebayResult)
+                    result.ebay = ebayResult;
+                if (errors.length > 0) {
+                    result.errors = `Failed to fetch credentials or search for: ${errors.join(', ')}`;
+                }
+                if (!amazonResult && !ebayResult) {
+                    result.error =
+                        'Failed to fetch marketplace credentials for any marketplace';
+                }
             }
             // ==============================
             // 🔹 CASE 2: GENERIC Search Mode
@@ -114,18 +150,31 @@ exports.getSingleProduct = (0, catchAsync_1.default)((req, res) => __awaiter(voi
     // const result = await getSingleAmazonProduct(id);
     console.log({ id, source });
     let result;
-    if (source === 'ebay') {
-        result = yield (0, util_1.getSingleProductFromEbay)(id);
+    try {
+        if (source === 'ebay') {
+            const ebayCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({ name: 'ebay' });
+            result = yield (0, util_1.getSingleProductFromEbay)(id, ebayCreds.clientId, ebayCreds.clientSecret);
+        }
+        else if (source === 'amazon') {
+            const amazonCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({ name: 'amazon' });
+            result = yield (0, util_1.getSingleAmazonProduct)(id, amazonCreds.clientId);
+        }
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.OK,
+            success: true,
+            message: `Product retrieved successfully from ${source}`,
+            data: result,
+        });
     }
-    else if (source === 'amazon') {
-        result = yield (0, util_1.getSingleAmazonProduct)(id);
+    catch (error) {
+        console.error(`Error fetching ${source} credentials or product:`, error);
+        (0, sendResponse_1.default)(res, {
+            statusCode: http_status_codes_1.StatusCodes.INTERNAL_SERVER_ERROR,
+            success: false,
+            message: `Failed to fetch credentials or retrieve product from ${source}`,
+            data: null,
+        });
     }
-    (0, sendResponse_1.default)(res, {
-        statusCode: http_status_codes_1.StatusCodes.OK,
-        success: true,
-        message: `Product retrieved successfully from ${source}`,
-        data: result,
-    });
 }));
 const createSearchType = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;

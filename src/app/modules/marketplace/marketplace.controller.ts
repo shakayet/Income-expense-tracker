@@ -61,31 +61,63 @@ export async function searchProduct(req: Request, res: Response) {
     if (searchType?.type === 'API') {
       console.log('🔍 Performing API-based search...');
 
+      let amazonResult = null;
+      let ebayResult = null;
+      let errors = [];
+
+      // Fetch Amazon credentials
       try {
-        // Fetch credentials from database
-        const [amazonCreds, ebayCreds] = await Promise.all([
-          MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
-            name: 'amazon',
-          }),
-          MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
-            name: 'ebay',
-          }),
-        ]);
+        const amazonCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            {
+              name: 'amazon',
+            }
+          );
+        console.log('Amazon creds found:', !!amazonCreds);
+        amazonResult = await getCheapestAmazonProducts(
+          query,
+          5,
+          amazonCreds.clientId
+        );
+      } catch (error) {
+        console.error('Error fetching Amazon credentials or searching:', error);
+        errors.push('amazon');
+      }
 
-        const [amazon, ebay] = await Promise.all([
-          getCheapestAmazonProducts(query, 5, amazonCreds.clientId),
-          getTopCheapestProductsFromEbay(
-            query,
-            5,
-            ebayCreds.clientId,
-            ebayCreds.clientSecret
-          ),
-        ]);
+      // Fetch eBay credentials
+      try {
+        const ebayCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            {
+              name: 'ebay',
+            }
+          );
+        console.log('eBay creds found:', !!ebayCreds);
+        ebayResult = await getTopCheapestProductsFromEbay(
+          query,
+          5,
+          ebayCreds.clientId,
+          ebayCreds.clientSecret
+        );
+      } catch (error) {
+        console.error('Error fetching eBay credentials or searching:', error);
+        errors.push('ebay');
+      }
 
-        result = { amazon, ebay };
-      } catch (credError) {
-        console.error('Error fetching credentials:', credError);
-        result = { error: 'Failed to fetch marketplace credentials' };
+      // Build result based on what succeeded
+      result = {};
+      if (amazonResult) result.amazon = amazonResult;
+      if (ebayResult) result.ebay = ebayResult;
+
+      if (errors.length > 0) {
+        result.errors = `Failed to fetch credentials or search for: ${errors.join(
+          ', '
+        )}`;
+      }
+
+      if (!amazonResult && !ebayResult) {
+        result.error =
+          'Failed to fetch marketplace credentials for any marketplace';
       }
     }
 
@@ -152,30 +184,40 @@ export const getSingleProduct = catchAsync(
 
     let result;
 
-    if (source === 'ebay') {
-      const ebayCreds =
-        await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
-          { name: 'ebay' }
+    try {
+      if (source === 'ebay') {
+        const ebayCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            { name: 'ebay' }
+          );
+        result = await getSingleProductFromEbay(
+          id,
+          ebayCreds.clientId,
+          ebayCreds.clientSecret
         );
-      result = await getSingleProductFromEbay(
-        id,
-        ebayCreds.clientId,
-        ebayCreds.clientSecret
-      );
-    } else if (source === 'amazon') {
-      const amazonCreds =
-        await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
-          { name: 'amazon' }
-        );
-      result = await getSingleAmazonProduct(id, amazonCreds.clientId);
-    }
+      } else if (source === 'amazon') {
+        const amazonCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            { name: 'amazon' }
+          );
+        result = await getSingleAmazonProduct(id, amazonCreds.clientId);
+      }
 
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      message: `Product retrieved successfully from ${source}`,
-      data: result,
-    });
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: `Product retrieved successfully from ${source}`,
+        data: result,
+      });
+    } catch (error) {
+      console.error(`Error fetching ${source} credentials or product:`, error);
+      sendResponse(res, {
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        success: false,
+        message: `Failed to fetch credentials or retrieve product from ${source}`,
+        data: null,
+      });
+    }
   }
 );
 

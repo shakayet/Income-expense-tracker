@@ -11,9 +11,15 @@ const auth_1 = __importDefault(require("../../middlewares/auth"));
 const user_1 = require("../../../enums/user");
 const validateRequest_1 = __importDefault(require("../../middlewares/validateRequest"));
 const router = express_1.default.Router();
+router.get('/latest', 
+// auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+marketplacecredential_controller_1.MarketplacecredentialController.getLatestMarketplacecredentialsByName);
 router.get('/:id', 
 // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 marketplacecredential_controller_1.MarketplacecredentialController.getSingleMarketplacecredential);
+router.get('/', 
+// auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+marketplacecredential_controller_1.MarketplacecredentialController.getAllMarketplacecredentials);
 router.post('/', 
 // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 (0, validateRequest_1.default)(marketplacecredential_validation_1.MarketplacecredentialValidations.create), marketplacecredential_controller_1.MarketplacecredentialController.createMarketplacecredential);

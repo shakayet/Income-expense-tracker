@@ -27,6 +27,25 @@ const createMarketplacecredential = (0, catchAsync_1.default)((req, res) => __aw
         data: result,
     });
 }));
+const getAllMarketplacecredentials = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield marketplacecredential_service_1.MarketplacecredentialServices.getAllMarketplacecredentials();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.CREATED,
+        success: true,
+        message: 'Marketplacecredential created successfully',
+        data: result,
+    });
+}));
+const getLatestMarketplacecredentialsByName = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { marketplaceName } = req.body;
+    const result = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({ name: marketplaceName });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.CREATED,
+        success: true,
+        message: 'Marketplacecredential created successfully',
+        data: result,
+    });
+}));
 const updateMarketplacecredential = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const marketplacecredentialData = req.body;
@@ -61,6 +80,8 @@ const deleteMarketplacecredential = (0, catchAsync_1.default)((req, res) => __aw
 exports.MarketplacecredentialController = {
     createMarketplacecredential,
     updateMarketplacecredential,
+    getAllMarketplacecredentials,
     getSingleMarketplacecredential,
     deleteMarketplacecredential,
+    getLatestMarketplacecredentialsByName,
 };
