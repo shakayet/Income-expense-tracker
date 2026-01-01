@@ -10,6 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildMonthlySummary = exports.addOrIncrementCategory = exports.notifyOnBudgetThreshold = exports.getUserMonthlyBudget = exports.getBudgetByUserAndMonth = void 0;
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Get only monthly budget and month for a user
 const notification_service_1 = require("../notification/notification.service");
 const report_service_1 = require("../reports/report.service");

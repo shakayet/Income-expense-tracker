@@ -42,6 +42,20 @@ const getSingleMarketplacecredential = (id) => __awaiter(void 0, void 0, void 0,
     }
     return result;
 });
+const getAllMarketplacecredentials = () => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield marketplacecredential_model_1.Marketplacecredential.find();
+    return result;
+});
+const getLatestMarketplacecredentialsByName = (_a) => __awaiter(void 0, [_a], void 0, function* ({ name, }) {
+    console.log('Name:', name);
+    const result = yield marketplacecredential_model_1.Marketplacecredential.findOne({
+        marketplaceName: name,
+    }).sort({ createdAt: -1 });
+    if (!result) {
+        throw new Error('No marketplace credential found for this name');
+    }
+    return result;
+});
 const updateMarketplacecredential = (id, payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (!mongoose_1.Types.ObjectId.isValid(id)) {
         throw new ApiError_1.default(http_status_codes_1.StatusCodes.BAD_REQUEST, 'Invalid Marketplacecredential ID');
@@ -68,6 +82,8 @@ const deleteMarketplacecredential = (id) => __awaiter(void 0, void 0, void 0, fu
 exports.MarketplacecredentialServices = {
     createMarketplacecredential,
     getSingleMarketplacecredential,
+    getAllMarketplacecredentials,
     updateMarketplacecredential,
     deleteMarketplacecredential,
+    getLatestMarketplacecredentialsByName,
 };

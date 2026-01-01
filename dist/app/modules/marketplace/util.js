@@ -22,12 +22,13 @@ exports.getSingleProductFromEbay = getSingleProductFromEbay;
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const axios_1 = __importDefault(require("axios"));
 const config_1 = __importDefault(require("../../../config"));
-const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
-const getAmazonProduct = (asin) => __awaiter(void 0, void 0, void 0, function* () {
+const API_KEY = '';
+const getAmazonProduct = (asin_1, ...args_1) => __awaiter(void 0, [asin_1, ...args_1], void 0, function* (asin, apiKey = API_KEY) {
+    console.log({ asin, apiKey });
     const res = yield axios_1.default.get('https://real-time-amazon-data.p.rapidapi.com/product', {
         params: { asin, country: 'US' },
         headers: {
-            'X-RapidAPI-Key': API_KEY,
+            'X-RapidAPI-Key': apiKey,
             'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
         },
     });
@@ -41,7 +42,7 @@ const getAmazonProduct = (asin) => __awaiter(void 0, void 0, void 0, function* (
     };
 });
 exports.getAmazonProduct = getAmazonProduct;
-const getCheapestAmazonProducts = (query_1, ...args_1) => __awaiter(void 0, [query_1, ...args_1], void 0, function* (query, top = 5) {
+const getCheapestAmazonProducts = (query_1, ...args_1) => __awaiter(void 0, [query_1, ...args_1], void 0, function* (query, top = 5, apiKey = API_KEY) {
     const res = yield axios_1.default.get('https://real-time-amazon-data.p.rapidapi.com/search', {
         params: { query, limit: 20, country: 'US' },
         headers: {
@@ -71,7 +72,7 @@ const getCheapestAmazonProducts = (query_1, ...args_1) => __awaiter(void 0, [que
     }));
 });
 exports.getCheapestAmazonProducts = getCheapestAmazonProducts;
-const getSingleAmazonProduct = (asin) => __awaiter(void 0, void 0, void 0, function* () {
+const getSingleAmazonProduct = (asin_1, ...args_1) => __awaiter(void 0, [asin_1, ...args_1], void 0, function* (asin, apiKey = API_KEY) {
     var _a, _b, _c, _d;
     try {
         // Use search endpoint as fallback
@@ -101,10 +102,10 @@ const getSingleAmazonProduct = (asin) => __awaiter(void 0, void 0, void 0, funct
 exports.getSingleAmazonProduct = getSingleAmazonProduct;
 // it's for ebay. perfect working
 const OAUTH_URL = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
-function getAppAccessToken() {
+function getAppAccessToken(clientId, clientSecret) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
-        const creds = Buffer.from(`${config_1.default.ebay.client_id}:${config_1.default.ebay.client_secret}`).toString('base64');
+        const creds = Buffer.from(`${clientId || config_1.default.ebay.client_id}:${clientSecret || config_1.default.ebay.client_secret}`).toString('base64');
         try {
             const res = yield axios_1.default.post(OAUTH_URL, 'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope', {
                 headers: {
@@ -121,9 +122,9 @@ function getAppAccessToken() {
     });
 }
 function searchProducts(query_1) {
-    return __awaiter(this, arguments, void 0, function* (query, limit = 10) {
+    return __awaiter(this, arguments, void 0, function* (query, limit = 10, clientId, clientSecret) {
         var _a;
-        const token = yield getAppAccessToken();
+        const token = yield getAppAccessToken(clientId, clientSecret);
         console.log({ token });
         const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&limit=${limit}`;
         try {
@@ -140,10 +141,10 @@ function searchProducts(query_1) {
     });
 }
 function getTopCheapestProductsFromEbay(query_1) {
-    return __awaiter(this, arguments, void 0, function* (query, top = 5) {
-        const data = yield searchProducts(query, 50); // your search API
+    return __awaiter(this, arguments, void 0, function* (query, top = 5, clientId, clientSecret) {
+        const data = yield searchProducts(query, 50, clientId, clientSecret); // your search API
         console.log({ data: data.itemSummaries });
-        const token = yield getAppAccessToken();
+        const token = yield getAppAccessToken(clientId, clientSecret);
         if (!data.itemSummaries || data.itemSummaries.length === 0)
             return [];
         // Filter items with a valid price
@@ -179,10 +180,10 @@ function getTopCheapestProductsFromEbay(query_1) {
         return products;
     });
 }
-function getSingleProductFromEbay(itemId) {
+function getSingleProductFromEbay(itemId, clientId, clientSecret) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c, _d, _e, _f, _g;
-        const token = yield getAppAccessToken();
+        const token = yield getAppAccessToken(clientId, clientSecret);
         // Construct the API URL
         const url = `https://api.sandbox.ebay.com/buy/browse/v1/item/${encodeURIComponent(itemId)}`;
         try {
