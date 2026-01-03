@@ -77,8 +77,7 @@ type AmazonProduct = {
 };
 
 export const getAmazonProduct = async (
-  asin: string,
-  apiKey: string = API_KEY
+  asin: string
 ): Promise<AmazonProduct> => {
   const API_KEY = await getRepidApiKey();
   const res = await axios.get(
@@ -86,7 +85,7 @@ export const getAmazonProduct = async (
     {
       params: { asin, country: 'US' },
       headers: {
-        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Key': API_KEY,
         'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
       },
     }
@@ -113,7 +112,7 @@ export const getCheapestAmazonProducts = async (
     {
       params: { query, limit: 20, country },
       headers: {
-        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Key': API_KEY,
         'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
       },
     }
@@ -163,7 +162,7 @@ export const getSingleAmazonProduct = async (
       {
         params: { query: asin, limit: 1, country },
         headers: {
-          'X-RapidAPI-Key': apiKey,
+          'X-RapidAPI-Key': API_KEY,
           'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
         },
       }
