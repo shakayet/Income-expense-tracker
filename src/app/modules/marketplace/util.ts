@@ -9,12 +9,48 @@ import { Marketplacecredential } from '../marketplacecredential/marketplacecrede
 
 const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
 
+const countryToLocale: Record<string, string> = {
+  US: 'en-US',
+  GB: 'en-GB',
+  DE: 'de-DE',
+  FR: 'fr-FR',
+  IN: 'en-IN',
+  IT: 'it-IT',
+  AU: 'en-AU',
+};
+
+export function formatPrice(value: number, currency: string, country?: string) {
+  const locale = country
+    ? countryToLocale[country.toUpperCase()] || 'en-US'
+    : 'en-US';
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+    }).format(value);
+  } catch {
+    return `${currency} ${value.toFixed(2)}`;
+  }
+}
+
+const countryToCurrency: Record<string, string> = {
+  US: 'USD',
+  GB: 'GBP',
+  DE: 'EUR',
+  FR: 'EUR',
+  IT: 'EUR',
+  IN: 'INR',
+  AU: 'AUD',
+};
+
 type AmazonProduct = {
   title: string;
   price: number;
   image: string;
   rating: number;
   url: string;
+  currency?: string;
+  formattedPrice?: string;
 };
 
 export const getAmazonProduct = async (
@@ -43,12 +79,13 @@ export const getAmazonProduct = async (
 
 export const getCheapestAmazonProducts = async (
   query: string,
-  top: number = 5
+  top: number = 5,
+  country: string = 'US'
 ): Promise<AmazonProduct[]> => {
   const res = await axios.get(
     'https://real-time-amazon-data.p.rapidapi.com/search',
     {
-      params: { query, limit: 20, country: 'US' },
+      params: { query, limit: 20, country },
       headers: {
         'X-RapidAPI-Key': API_KEY,
         'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
@@ -70,25 +107,34 @@ export const getCheapestAmazonProducts = async (
     })
     .slice(0, top);
 
-  return products.map((p: any) => ({
-    itemId: p.asin,
-    title: p.product_title,
-    price: parseFloat(p.product_price.replace('$', '')), // Remove dollar sign
-    image: p.product_photo,
-    rating: parseFloat(p.product_star_rating),
-    url: p.product_url,
-  }));
+  return products.map((p: any) => {
+    const raw = p.product_price || '';
+    const numeric =
+      parseFloat(raw.replace(/[^0-9.,-]+/g, '').replace(',', '.')) || 0;
+    const currency = countryToCurrency[country?.toUpperCase()] || 'USD';
+    return {
+      itemId: p.asin,
+      title: p.product_title,
+      price: numeric,
+      currency,
+      formattedPrice: formatPrice(numeric, currency, country),
+      image: p.product_photo,
+      rating: parseFloat(p.product_star_rating),
+      url: p.product_url,
+    };
+  });
 };
 
 export const getSingleAmazonProduct = async (
-  asin: string
+  asin: string,
+  country: string = 'US'
 ): Promise<AmazonProduct | null> => {
   try {
     // Use search endpoint as fallback
     const res = await axios.get(
       'https://real-time-amazon-data.p.rapidapi.com/search',
       {
-        params: { query: asin, limit: 1, country: 'US' },
+        params: { query: asin, limit: 1, country },
         headers: {
           'X-RapidAPI-Key': API_KEY,
           'X-RapidAPI-Host': 'real-time-amazon-data.p.rapidapi.com',
@@ -99,9 +145,15 @@ export const getSingleAmazonProduct = async (
     const product = res.data?.data?.products?.[0];
     if (!product) return null;
 
+    const raw = product.product_price || '';
+    const numeric =
+      parseFloat(raw.replace(/[^0-9.,-]+/g, '').replace(',', '.')) || 0;
+    const currency = countryToCurrency[country?.toUpperCase()] || 'USD';
     return {
       title: product.product_title,
-      price: parseFloat(product.product_price.replace('$', '')) || 0,
+      price: numeric,
+      currency,
+      formattedPrice: formatPrice(numeric, currency, country),
       image: product.product_photo || 'https://via.placeholder.com/150',
       rating: parseFloat(product.product_star_rating) || 0,
       url: product.product_url || '#',
@@ -115,59 +167,128 @@ export const getSingleAmazonProduct = async (
   }
 };
 
-// it's for ebay. perfect working
-
-// it's production url, for sandbox use 'https://api.sandbox.ebay.com/identity/v1/oauth2/token'
-
+// eBay OAuth endpoint
+// use sandbox URL for sandbox environment if needed
 const OAUTH_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
 
-let ebayCredsCache: { clientId: string; clientSecret: string } | null = null;
+type Creds = { clientId: string; clientSecret: string };
+const ebayCredsCache: Record<string, Creds> = {};
+const tokenCache: Record<string, { token: string; expiresAt: number }> = {};
 
-async function loadEbayCredentialsFromDB() {
-  if (ebayCredsCache) return ebayCredsCache;
+async function loadEbayCredentialsFromDB(
+  country?: string,
+  environment = 'production'
+): Promise<Creds> {
+  const cacheKey = `${environment}:${country || 'all'}`;
+  if (ebayCredsCache[cacheKey]) return ebayCredsCache[cacheKey];
 
-  const doc: any = await Marketplacecredential.findOne({
-    marketplaceName: 'ebay',
-    environment: 'production',
-  }).lean();
+  const query: any = { marketplaceName: 'ebay', environment };
+  if (country) query.country = country;
+
+  // try with country first
+  let doc: any = await Marketplacecredential.findOne(query).lean();
+
+  // fallback: if country-specific not found, try without country
+  if (!doc && country) {
+    doc = await Marketplacecredential.findOne({
+      marketplaceName: 'ebay',
+      environment,
+    }).lean();
+  }
+
+  // fallback to config values if DB not populated
+  const cfgClientId =
+    (config as any)?.ebay?.client_id || (config as any)?.ebay?.clientId;
+  const cfgClientSecret =
+    (config as any)?.ebay?.client_secret || (config as any)?.ebay?.clientSecret;
 
   if (!doc || !doc.clientId || !doc.clientSecret) {
-    throw new Error('eBay credentials not found in DB');
+    if (cfgClientId && cfgClientSecret) {
+      ebayCredsCache[cacheKey] = {
+        clientId: cfgClientId,
+        clientSecret: cfgClientSecret,
+      };
+      return ebayCredsCache[cacheKey];
+    }
+    throw new Error('eBay credentials not found in DB or config');
   }
 
-  ebayCredsCache = { clientId: doc.clientId, clientSecret: doc.clientSecret };
-  return ebayCredsCache;
+  ebayCredsCache[cacheKey] = {
+    clientId: doc.clientId,
+    clientSecret: doc.clientSecret,
+  };
+  return ebayCredsCache[cacheKey];
 }
 
-async function getAppAccessToken(): Promise<string> {
-  const { clientId, clientSecret } = await loadEbayCredentialsFromDB();
+async function getAppAccessToken(country?: string): Promise<string> {
+  // const { clientId, clientSecret } = await loadEbayCredentialsFromDB(country);
+  const clientId = 'CenterIn-yespend-PRD-ca317c62b-8eb20dcf',
+    clientSecret = 'PRD-a317c62b9e33-55a0-4d8a-a592-b6fd';
+  const cacheKey = clientId; // token cache per app
+
+  const now = Date.now();
+  const existing = tokenCache[cacheKey];
+  if (existing && existing.expiresAt - now > 60_000) {
+    return existing.token;
+  }
+
   const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const body =
+    'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope';
+  const headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    Authorization: `Basic ${creds}`,
+  };
 
-  console.log({ creds });
-  try {
-    const res = await axios.post(
-      OAUTH_URL,
-      'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope',
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${creds}`,
-        },
+  const maxRetries = 2;
+  let lastErr: any = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await axios.post(OAUTH_URL, body, { headers, timeout: 5000 });
+      const token = res.data.access_token;
+      const expiresIn = Number(res.data.expires_in) || 7200;
+      tokenCache[cacheKey] = {
+        token,
+        expiresAt: Date.now() + expiresIn * 1000,
+      };
+      return token;
+    } catch (err: any) {
+      lastErr = err;
+      const status = err.response?.status;
+      const data = err.response?.data;
+      console.error(`eBay token request failed (attempt ${attempt + 1})`, {
+        status,
+        data,
+        message: err.message,
+      });
+      if (
+        attempt < maxRetries &&
+        (!status || (status >= 500 && status < 600))
+      ) {
+        const wait = 200 * Math.pow(2, attempt);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
       }
-    );
-
-    return res.data.access_token;
-  } catch (err: any) {
-    console.error(
-      'Error fetching eBay access token:',
-      err.response?.data || err.message
-    );
-    throw new Error('Failed to get eBay access token');
+      break;
+    }
   }
+
+  throw new Error(
+    `Failed to obtain eBay access token: ${
+      lastErr?.response?.data?.error_description ||
+      lastErr?.message ||
+      'unknown'
+    }`
+  );
 }
 
-async function searchProducts(query: string, limit = 10) {
-  const token = await getAppAccessToken();
+async function searchProducts(
+  query: string,
+  limit = 10,
+  country: string = 'italy'
+) {
+  const token = await getAppAccessToken(country);
+  // const token = await getAppAccessToken(country);
   console.log({ token });
   const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
     query
@@ -188,12 +309,16 @@ async function searchProducts(query: string, limit = 10) {
   }
 }
 
-export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
-  const data = await searchProducts(query, 50); // your search API
+export async function getTopCheapestProductsFromEbay(
+  query: string,
+  top = 5,
+  country?: string
+) {
+  const data = await searchProducts(query, 50, country); // your search API
 
   console.log({ data: data.itemSummaries });
 
-  const token = await getAppAccessToken();
+  const token = await getAppAccessToken(country);
 
   if (!data.itemSummaries || data.itemSummaries.length === 0) return [];
 
@@ -214,24 +339,34 @@ export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
   // Fetch images for each item (fallback to placeholder if none)
   const products = await Promise.all(
     topItems.map(async (item: any) => {
-      const fullItem = await getSingleProductFromEbay(item.itemId);
-      return fullItem
-        ? {
-            itemId: item.itemId,
-            title: fullItem.title,
-            price: fullItem.price,
-            image: fullItem.image,
-            rating: fullItem.rating,
-            url: fullItem.url,
-          }
-        : {
-            itemId: item.itemId,
-            title: item.title,
-            price: parseFloat(item.price.value),
-            image: 'https://via.placeholder.com/150',
-            rating: 0,
-            url: item.itemWebUrl || '#',
-          };
+      const fullItem = await getSingleProductFromEbay(item.itemId, country);
+      if (fullItem) {
+        const price = fullItem.price;
+        const currency = fullItem.currency || item.price?.currency || 'USD';
+        return {
+          itemId: item.itemId,
+          title: fullItem.title,
+          price,
+          currency,
+          formattedPrice: formatPrice(price, currency, country),
+          image: fullItem.image,
+          rating: fullItem.rating,
+          url: fullItem.url,
+        };
+      }
+
+      const fallbackPrice = parseFloat(item.price.value || '0');
+      const fallbackCurrency = item.price?.currency || 'USD';
+      return {
+        itemId: item.itemId,
+        title: item.title,
+        price: fallbackPrice,
+        currency: fallbackCurrency,
+        formattedPrice: formatPrice(fallbackPrice, fallbackCurrency, country),
+        image: 'https://via.placeholder.com/150',
+        rating: 0,
+        url: item.itemWebUrl || '#',
+      };
     })
   );
 
@@ -240,8 +375,11 @@ export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
   return products;
 }
 
-export async function getSingleProductFromEbay(itemId: string) {
-  const token = await getAppAccessToken();
+export async function getSingleProductFromEbay(
+  itemId: string,
+  country?: string
+) {
+  const token = await getAppAccessToken(country);
 
   // Construct the API URL
   const url = `https://api.ebay.com/buy/browse/v1/item/${encodeURIComponent(
@@ -259,10 +397,13 @@ export async function getSingleProductFromEbay(itemId: string) {
     const item = res.data;
 
     // Format result similar to getTopCheapestProducts
+    const numericPrice = parseFloat(item.price?.value || 0);
+    const currency = item.price?.currency || 'USD';
     return {
       title: item.title || 'No title',
-      price: parseFloat(item.price?.value || 0),
-      currency: item.price?.currency || 'USD',
+      price: numericPrice,
+      currency,
+      formattedPrice: formatPrice(numericPrice, currency, country),
       image: item.image?.imageUrl || 'https://via.placeholder.com/150',
       rating: item.reviews?.averageRating ?? 0,
       seller: item.seller?.username || 'Unknown seller',
@@ -277,4 +418,34 @@ export async function getSingleProductFromEbay(itemId: string) {
     );
     return null;
   }
+}
+
+export async function comparePricesAcrossCountries(
+  query: string,
+  countries: string[],
+  top = 5
+) {
+  const promises = countries.map(async country => {
+    try {
+      const products = await getTopCheapestProductsFromEbay(
+        query,
+        top,
+        country
+      );
+      return { country, products };
+    } catch (err: any) {
+      console.error(
+        `comparePricesAcrossCountries error for ${country}:`,
+        err?.message || err
+      );
+      return { country, products: [] };
+    }
+  });
+
+  const results = await Promise.all(promises);
+  const map: Record<string, any[]> = {};
+  results.forEach(r => {
+    map[r.country] = r.products || [];
+  });
+  return map;
 }

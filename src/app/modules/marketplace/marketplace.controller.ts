@@ -47,6 +47,7 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
 export async function searchProduct(req: Request, res: Response) {
   try {
     const query = (req.query.product as string) || 'bike';
+    const country = (req.query.country as string) || undefined;
     // const maxPrice = Number(req.query.maxPrice) || 999999;
 
     // ✅ Get the current search type
@@ -60,11 +61,12 @@ export async function searchProduct(req: Request, res: Response) {
     if (searchType?.type === 'API') {
       console.log('🔍 Performing API-based search...');
 
+      // single-country (or default) search
+      const ct = country || 'IT';
       const [amazon, ebay] = await Promise.all([
-        getCheapestAmazonProducts(query),
-        getTopCheapestProductsFromEbay(query),
+        getCheapestAmazonProducts(query, 5, ct),
+        getTopCheapestProductsFromEbay(query, 5, ct),
       ]);
-
       result = { amazon, ebay };
     }
 
