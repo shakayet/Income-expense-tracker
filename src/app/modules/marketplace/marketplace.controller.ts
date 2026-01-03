@@ -47,7 +47,7 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
 export async function searchProduct(req: Request, res: Response) {
   try {
     const query = (req.query.product as string) || 'bike';
-    const country = (req.query.country as string) || undefined;
+    const country = (req.body.country as string) || undefined;
     // const maxPrice = Number(req.query.maxPrice) || 999999;
 
     // ✅ Get the current search type

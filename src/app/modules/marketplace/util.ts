@@ -12,7 +12,7 @@ import { Marketplacecredential } from '../marketplacecredential/marketplacecrede
 const getRepidApiKey = async () => {
   const data = await Marketplacecredential.findOne({
     marketplaceName: 'amazon',
-    environment: 'sandbox',
+    environment: 'production',
   })
     .sort({ _id: -1 }) // descending = latest first
     .lean();
