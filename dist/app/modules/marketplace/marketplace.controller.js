@@ -21,7 +21,6 @@ const http_status_codes_1 = require("http-status-codes");
 const util_1 = require("./util");
 const marketplace_model_1 = require("./marketplace.model");
 const affiliate_service_1 = require("../scraping/affiliate.service");
-const marketplacecredential_service_1 = require("../marketplacecredential/marketplacecredential.service");
 const updateMarketplace = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const marketplaceData = req.body;
@@ -48,6 +47,7 @@ function searchProduct(req, res) {
         var _a;
         try {
             const query = req.query.product || 'bike';
+            const country = req.query.country || undefined;
             // const maxPrice = Number(req.query.maxPrice) || 999999;
             // ✅ Get the current search type
             const searchType = yield marketplace_model_1.SearchTypeModel.findOne({});
@@ -57,26 +57,13 @@ function searchProduct(req, res) {
             // ==============================
             if ((searchType === null || searchType === void 0 ? void 0 : searchType.type) === 'API') {
                 console.log('🔍 Performing API-based search...');
-                try {
-                    // Fetch credentials from database
-                    const [amazonCreds, ebayCreds] = yield Promise.all([
-                        marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
-                            name: 'amazon',
-                        }),
-                        marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({
-                            name: 'ebay',
-                        }),
-                    ]);
-                    const [amazon, ebay] = yield Promise.all([
-                        (0, util_1.getCheapestAmazonProducts)(query, 5, amazonCreds.clientId),
-                        (0, util_1.getTopCheapestProductsFromEbay)(query, 5, ebayCreds.clientId, ebayCreds.clientSecret),
-                    ]);
-                    result = { amazon, ebay };
-                }
-                catch (credError) {
-                    console.error('Error fetching credentials:', credError);
-                    result = { error: 'Failed to fetch marketplace credentials' };
-                }
+                // single-country (or default) search
+                const ct = country || 'US';
+                const [amazon, ebay] = yield Promise.all([
+                    (0, util_1.getCheapestAmazonProducts)(query, 5, ct),
+                    (0, util_1.getTopCheapestProductsFromEbay)(query, 5, ct),
+                ]);
+                result = { amazon, ebay };
             }
             // ==============================
             // 🔹 CASE 2: GENERIC Search Mode
@@ -131,13 +118,17 @@ exports.getSingleProduct = (0, catchAsync_1.default)((req, res) => __awaiter(voi
     console.log({ id, source });
     let result;
     if (source === 'ebay') {
-        const ebayCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({ name: 'ebay' });
-        result = yield (0, util_1.getSingleProductFromEbay)(id, ebayCreds.clientId, ebayCreds.clientSecret);
+        result = yield (0, util_1.getSingleProductFromEbay)(id);
     }
     else if (source === 'amazon') {
-        const amazonCreds = yield marketplacecredential_service_1.MarketplacecredentialServices.getLatestMarketplacecredentialsByName({ name: 'amazon' });
-        result = yield (0, util_1.getSingleAmazonProduct)(id, amazonCreds.clientId);
+        result = yield (0, util_1.getSingleAmazonProduct)(id);
     }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: `Product retrieved successfully from ${source}`,
+        data: result,
+    });
 }));
 const createSearchType = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;

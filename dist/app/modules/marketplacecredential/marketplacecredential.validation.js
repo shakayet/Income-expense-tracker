@@ -6,8 +6,9 @@ exports.MarketplacecredentialValidations = {
     create: zod_1.z.object({
         body: zod_1.z.object({
             marketplaceName: zod_1.z.string(),
-            clientId: zod_1.z.string(),
-            clientSecret: zod_1.z.string(),
+            api_key: zod_1.z.string().optional(),
+            clientId: zod_1.z.string().optional(),
+            clientSecret: zod_1.z.string().optional(),
             refreshToken: zod_1.z.string().optional(),
             awsAccessKeyId: zod_1.z.string().optional(),
             awsSecretAccessKey: zod_1.z.string().optional(),
