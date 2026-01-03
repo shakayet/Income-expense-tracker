@@ -48,6 +48,7 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
 export async function searchProduct(req: Request, res: Response) {
   try {
     const query = (req.query.product as string) || 'bike';
+    const country = (req.query.country as string) || undefined;
     // const maxPrice = Number(req.query.maxPrice) || 999999;
 
     // ✅ Get the current search type
@@ -61,64 +62,13 @@ export async function searchProduct(req: Request, res: Response) {
     if (searchType?.type === 'API') {
       console.log('🔍 Performing API-based search...');
 
-      let amazonResult = null;
-      let ebayResult = null;
-      let errors = [];
-
-      // Fetch Amazon credentials
-      try {
-        const amazonCreds =
-          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
-            {
-              name: 'amazon',
-            }
-          );
-        console.log('Amazon creds found:', !!amazonCreds);
-        amazonResult = await getCheapestAmazonProducts(
-          query,
-          5,
-          amazonCreds.clientId
-        );
-      } catch (error) {
-        console.error('Error fetching Amazon credentials or searching:', error);
-        errors.push('amazon');
-      }
-
-      // Fetch eBay credentials
-      try {
-        const ebayCreds =
-          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
-            {
-              name: 'ebay',
-            }
-          );
-        console.log('eBay creds found:', !!ebayCreds);
-        ebayResult = await getTopCheapestProductsFromEbay(
-          query,
-          5,
-          ebayCreds.clientId,
-          ebayCreds.clientSecret
-        );
-      } catch (error) {
-        console.error('Error fetching eBay credentials or searching:', error);
-        errors.push('ebay');
-      }
-
-      // Build result based on what succeeded
-      result = {};
-      if (amazonResult) result.amazon = amazonResult;
-      if (ebayResult) result.ebay = ebayResult;
-
-      if (errors.length > 0) {
-        result.errors = `Failed to fetch credentials or search for: ${errors.join(
-          ', '
-        )}`;
-      }
-
-      if (!amazonResult && !ebayResult) {
-        result.error =
-          'Failed to fetch marketplace credentials for any marketplace';
-      }
+      // single-country (or default) search
+      const ct = country || 'US';
+      const [amazon, ebay] = await Promise.all([
+        getCheapestAmazonProducts(query, 5, ct),
+        getTopCheapestProductsFromEbay(query, 5, ct),
+      ]);
+      result = { amazon, ebay };
     }
 
     // ==============================
