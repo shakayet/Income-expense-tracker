@@ -14,7 +14,7 @@ type AmazonProduct = {
   image: string;
   rating: number;
   url: string;
-}
+};
 
 export const getAmazonProduct = async (
   asin: string
@@ -116,14 +116,16 @@ export const getSingleAmazonProduct = async (
 
 // it's for ebay. perfect working
 
-const OAUTH_URL = 'https://api.sandbox.ebay.com/identity/v1/oauth2/token';
+// it's production url, for sandbox use 'https://api.sandbox.ebay.com/identity/v1/oauth2/token'
+
+const OAUTH_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
 
 async function getAppAccessToken(): Promise<string> {
   const creds = Buffer.from(
     `${config.ebay.client_id}:${config.ebay.client_secret}`
   ).toString('base64');
 
-  
+  console.log({ creds });
   try {
     const res = await axios.post(
       OAUTH_URL,
@@ -149,17 +151,17 @@ async function getAppAccessToken(): Promise<string> {
 async function searchProducts(query: string, limit = 10) {
   const token = await getAppAccessToken();
   console.log({ token });
-  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-
+  const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
+    query
+  )}&limit=${limit}`;
 
   try {
     const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    console.log({res : res})
+    console.log({ res: res });
     return res.data;
   } catch (err: any) {
-
     console.error(
       'Error fetching eBay products:',
       err.response?.data || err.message
@@ -169,10 +171,9 @@ async function searchProducts(query: string, limit = 10) {
 }
 
 export async function getTopCheapestProductsFromEbay(query: string, top = 5) {
-
   const data = await searchProducts(query, 50); // your search API
 
-  console.log({data : data.itemSummaries})
+  console.log({ data: data.itemSummaries });
 
   const token = await getAppAccessToken();
 
@@ -225,7 +226,7 @@ export async function getSingleProductFromEbay(itemId: string) {
   const token = await getAppAccessToken();
 
   // Construct the API URL
-  const url = `https://api.sandbox.ebay.com/buy/browse/v1/item/${encodeURIComponent(
+  const url = `https://api.ebay.com/buy/browse/v1/item/${encodeURIComponent(
     itemId
   )}`;
 
