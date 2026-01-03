@@ -47,7 +47,7 @@ function searchProduct(req, res) {
         var _a;
         try {
             const query = req.query.product || 'bike';
-            const country = req.query.country || undefined;
+            const country = req.body.country || undefined;
             // const maxPrice = Number(req.query.maxPrice) || 999999;
             // ✅ Get the current search type
             const searchType = yield marketplace_model_1.SearchTypeModel.findOne({});

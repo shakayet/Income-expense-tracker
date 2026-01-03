@@ -29,7 +29,7 @@ const marketplacecredential_model_1 = require("../marketplacecredential/marketpl
 const getRepidApiKey = () => __awaiter(void 0, void 0, void 0, function* () {
     const data = yield marketplacecredential_model_1.Marketplacecredential.findOne({
         marketplaceName: 'amazon',
-        environment: 'sandbox',
+        environment: 'production',
     })
         .sort({ _id: -1 }) // descending = latest first
         .lean();
