@@ -15,6 +15,7 @@ export interface IMarketplacecredentialFilterables {
 export interface IMarketplacecredential {
   _id: Types.ObjectId;
   marketplaceName: 'amazon' | 'ebay' | 'alibaba' | 'zalando' | 'leroy_merlin';
+  api_key?: string;
   clientId: string;
   clientSecret: string;
   refreshToken?: string;

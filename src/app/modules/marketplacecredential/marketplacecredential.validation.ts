@@ -4,8 +4,9 @@ export const MarketplacecredentialValidations = {
   create: z.object({
     body: z.object({
       marketplaceName: z.string(),
-      clientId: z.string(),
-      clientSecret: z.string(),
+      api_key: z.string().optional(),
+      clientId: z.string().optional(),
+      clientSecret: z.string().optional(),
       refreshToken: z.string().optional(),
       awsAccessKeyId: z.string().optional(),
       awsSecretAccessKey: z.string().optional(),

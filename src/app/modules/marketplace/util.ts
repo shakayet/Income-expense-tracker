@@ -7,7 +7,19 @@ import axios from 'axios';
 import config from '../../../config';
 import { Marketplacecredential } from '../marketplacecredential/marketplacecredential.model';
 
-const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
+// const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
+
+const getRepidApiKey = async () => {
+  const data = await Marketplacecredential.findOne({
+    marketplaceName: 'amazon',
+    environment: 'sandbox',
+  })
+    .sort({ _id: -1 }) // descending = latest first
+    .lean();
+
+  console.log({ data });
+  return data?.api_key || '';
+};
 
 const countryToLocale: Record<string, string> = {
   US: 'en-US',
@@ -67,6 +79,7 @@ type AmazonProduct = {
 export const getAmazonProduct = async (
   asin: string
 ): Promise<AmazonProduct> => {
+  const API_KEY = await getRepidApiKey();
   const res = await axios.get(
     'https://real-time-amazon-data.p.rapidapi.com/product',
     {
@@ -93,6 +106,7 @@ export const getCheapestAmazonProducts = async (
   top: number = 5,
   country: string = 'US'
 ): Promise<AmazonProduct[]> => {
+  const API_KEY = await getRepidApiKey();
   const res = await axios.get(
     'https://real-time-amazon-data.p.rapidapi.com/search',
     {
@@ -140,6 +154,7 @@ export const getSingleAmazonProduct = async (
   asin: string,
   country: string = 'US'
 ): Promise<AmazonProduct | null> => {
+  const API_KEY = await getRepidApiKey();
   try {
     // Use search endpoint as fallback
     const res = await axios.get(
