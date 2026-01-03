@@ -14,6 +14,7 @@ import {
 } from './util';
 import { SearchTypeModel } from './marketplace.model';
 import { genericSearch } from '../scraping/affiliate.service';
+import { MarketplacecredentialServices } from '../marketplacecredential/marketplacecredential.service';
 
 const updateMarketplace = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
@@ -133,18 +134,40 @@ export const getSingleProduct = catchAsync(
 
     let result;
 
-    if (source === 'ebay') {
-      result = await getSingleProductFromEbay(id);
-    } else if (source === 'amazon') {
-      result = await getSingleAmazonProduct(id);
-    }
+    try {
+      if (source === 'ebay') {
+        const ebayCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            { name: 'ebay' }
+          );
+        result = await getSingleProductFromEbay(
+          id,
+          ebayCreds.clientId,
+          ebayCreds.clientSecret
+        );
+      } else if (source === 'amazon') {
+        const amazonCreds =
+          await MarketplacecredentialServices.getLatestMarketplacecredentialsByName(
+            { name: 'amazon' }
+          );
+        result = await getSingleAmazonProduct(id, amazonCreds.clientId);
+      }
 
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      message: `Product retrieved successfully from ${source}`,
-      data: result,
-    });
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: `Product retrieved successfully from ${source}`,
+        data: result,
+      });
+    } catch (error) {
+      console.error(`Error fetching ${source} credentials or product:`, error);
+      sendResponse(res, {
+        statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+        success: false,
+        message: `Failed to fetch credentials or retrieve product from ${source}`,
+        data: null,
+      });
+    }
   }
 );
 
