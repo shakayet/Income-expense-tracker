@@ -43,6 +43,17 @@ const countryToCurrency: Record<string, string> = {
   AU: 'AUD',
 };
 
+const countryToEbayMarketplace: Record<string, string> = {
+  // Use underscore variant which the Buy API expects in many cases
+  US: 'EBAY_US',
+  GB: 'EBAY_GB',
+  DE: 'EBAY_DE',
+  FR: 'EBAY_FR',
+  IT: 'EBAY_IT',
+  IN: 'EBAY_IN',
+  AU: 'EBAY_AU',
+};
+
 type AmazonProduct = {
   title: string;
   price: number;
@@ -290,15 +301,42 @@ async function searchProducts(
   const token = await getAppAccessToken(country);
   // const token = await getAppAccessToken(country);
   console.log({ token });
+  const marketplaceId = countryToEbayMarketplace[country?.toUpperCase()];
+  // log marketplaceId for debugging
+  console.log({ country, marketplaceId });
   const url = `https://api.ebay.com/buy/browse/v1/item_summary/search?q=${encodeURIComponent(
     query
-  )}&limit=${limit}`;
+  )}&limit=${limit}${
+    marketplaceId ? `&marketplace_id=${encodeURIComponent(marketplaceId)}` : ''
+  }`;
 
   try {
-    const res = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log({ res: res });
+    const headers: any = { Authorization: `Bearer ${token}` };
+    if (marketplaceId) headers['X-EBAY-C-MARKETPLACE-ID'] = marketplaceId;
+    const acceptLang = country
+      ? countryToLocale[country.toUpperCase()]
+      : undefined;
+    if (acceptLang) headers['Accept-Language'] = acceptLang;
+
+    const res = await axios.get(url, { headers });
+    // debug: log first item currency if available
+    if (res?.data?.itemSummaries?.length) {
+      console.log(
+        'eBay search first item currency:',
+        res.data.itemSummaries[0].price?.currency
+      );
+      const expected = countryToCurrency[country?.toUpperCase() || 'US'];
+      if (
+        res.data.itemSummaries[0].price?.currency &&
+        expected &&
+        res.data.itemSummaries[0].price.currency !== expected
+      ) {
+        console.warn(
+          `Currency mismatch: expected ${expected} but got ${res.data.itemSummaries[0].price.currency}`
+        );
+      }
+    }
+    // console.log({ res: res });
     return res.data;
   } catch (err: any) {
     console.error(
@@ -316,7 +354,7 @@ export async function getTopCheapestProductsFromEbay(
 ) {
   const data = await searchProducts(query, 50, country); // your search API
 
-  console.log({ data: data.itemSummaries });
+  // console.log({ data: data.itemSummaries[0].price });
 
   const token = await getAppAccessToken(country);
 
@@ -342,7 +380,7 @@ export async function getTopCheapestProductsFromEbay(
       const fullItem = await getSingleProductFromEbay(item.itemId, country);
       if (fullItem) {
         const price = fullItem.price;
-        const currency = fullItem.currency || item.price?.currency || 'USD';
+        const currency = item.price?.currency;
         return {
           itemId: item.itemId,
           title: fullItem.title,
@@ -370,7 +408,7 @@ export async function getTopCheapestProductsFromEbay(
     })
   );
 
-  console.log({ products });
+  // console.log({ products });
 
   return products;
 }
@@ -382,9 +420,14 @@ export async function getSingleProductFromEbay(
   const token = await getAppAccessToken(country);
 
   // Construct the API URL
+  const marketplaceId = countryToEbayMarketplace[country?.toUpperCase() || ''];
   const url = `https://api.ebay.com/buy/browse/v1/item/${encodeURIComponent(
     itemId
-  )}`;
+  )}${
+    marketplaceId ? `?marketplace_id=${encodeURIComponent(marketplaceId)}` : ''
+  }`;
+
+  console.log({ url });
 
   try {
     const res = await axios.get(url, {

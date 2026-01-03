@@ -62,7 +62,7 @@ export async function searchProduct(req: Request, res: Response) {
       console.log('🔍 Performing API-based search...');
 
       // single-country (or default) search
-      const ct = country || 'IT';
+      const ct = country || 'US';
       const [amazon, ebay] = await Promise.all([
         getCheapestAmazonProducts(query, 5, ct),
         getTopCheapestProductsFromEbay(query, 5, ct),
