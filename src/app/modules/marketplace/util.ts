@@ -5,6 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
 import config from '../../../config';
+import { Marketplacecredential } from '../marketplacecredential/marketplacecredential.model';
 
 const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
 
@@ -120,10 +121,27 @@ export const getSingleAmazonProduct = async (
 
 const OAUTH_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
 
+let ebayCredsCache: { clientId: string; clientSecret: string } | null = null;
+
+async function loadEbayCredentialsFromDB() {
+  if (ebayCredsCache) return ebayCredsCache;
+
+  const doc: any = await Marketplacecredential.findOne({
+    marketplaceName: 'ebay',
+    environment: 'production',
+  }).lean();
+
+  if (!doc || !doc.clientId || !doc.clientSecret) {
+    throw new Error('eBay credentials not found in DB');
+  }
+
+  ebayCredsCache = { clientId: doc.clientId, clientSecret: doc.clientSecret };
+  return ebayCredsCache;
+}
+
 async function getAppAccessToken(): Promise<string> {
-  const creds = Buffer.from(
-    `${config.ebay.client_id}:${config.ebay.client_secret}`
-  ).toString('base64');
+  const { clientId, clientSecret } = await loadEbayCredentialsFromDB();
+  const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   console.log({ creds });
   try {
