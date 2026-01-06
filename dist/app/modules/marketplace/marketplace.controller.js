@@ -47,7 +47,7 @@ function searchProduct(req, res) {
         var _a;
         try {
             const query = req.query.product || 'bike';
-            const country = req.body.country || undefined;
+            const country = req.query.country || undefined;
             // const maxPrice = Number(req.query.maxPrice) || 999999;
             // ✅ Get the current search type
             const searchType = yield marketplace_model_1.SearchTypeModel.findOne({});
@@ -59,12 +59,19 @@ function searchProduct(req, res) {
                 console.log('🔍 Performing API-based search...');
                 // single-country (or default) search
                 const ct = country || 'US';
-                const [amazon, ebay] = yield Promise.all([
-                    (0, util_1.getCheapestAmazonProducts)(query, 5, ct),
+                const [ebay] = yield Promise.all([
+                    // getCheapestAmazonProducts(query, 5, ct),
                     (0, util_1.getTopCheapestProductsFromEbay)(query, 5, ct),
                 ]);
-                result = { amazon, ebay };
+                result = { ebay };
             }
+            // amazon + ebay combined search (multi-country) - DISABLED FOR NOW
+            //   const [amazon, ebay] = await Promise.all([
+            //     getCheapestAmazonProducts(query, 5, ct),
+            //     getTopCheapestProductsFromEbay(query, 5, ct),
+            //   ]);
+            //   result = { amazon, ebay };
+            // }
             // ==============================
             // 🔹 CASE 2: GENERIC Search Mode
             // ==============================

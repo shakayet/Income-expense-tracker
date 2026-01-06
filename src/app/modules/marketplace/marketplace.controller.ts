@@ -7,7 +7,7 @@ import sendResponse from '../../../shared/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 
 import {
-  getCheapestAmazonProducts,
+  // getCheapestAmazonProducts,
   getSingleAmazonProduct,
   getSingleProductFromEbay,
   getTopCheapestProductsFromEbay,
@@ -47,7 +47,7 @@ const deleteMarketplace = catchAsync(async (req: Request, res: Response) => {
 export async function searchProduct(req: Request, res: Response) {
   try {
     const query = (req.query.product as string) || 'bike';
-    const country = (req.body.country as string) || undefined;
+    const country = (req.query.country as string) || undefined;
     // const maxPrice = Number(req.query.maxPrice) || 999999;
 
     // ✅ Get the current search type
@@ -63,12 +63,19 @@ export async function searchProduct(req: Request, res: Response) {
 
       // single-country (or default) search
       const ct = country || 'US';
-      const [amazon, ebay] = await Promise.all([
-        getCheapestAmazonProducts(query, 5, ct),
+      const [ebay] = await Promise.all([
+        // getCheapestAmazonProducts(query, 5, ct),
         getTopCheapestProductsFromEbay(query, 5, ct),
       ]);
-      result = { amazon, ebay };
+      result = { ebay };
     }
+    // amazon + ebay combined search (multi-country) - DISABLED FOR NOW
+    //   const [amazon, ebay] = await Promise.all([
+    //     getCheapestAmazonProducts(query, 5, ct),
+    //     getTopCheapestProductsFromEbay(query, 5, ct),
+    //   ]);
+    //   result = { amazon, ebay };
+    // }
 
     // ==============================
     // 🔹 CASE 2: GENERIC Search Mode
