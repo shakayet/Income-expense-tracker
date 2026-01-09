@@ -127,6 +127,10 @@ const deleteMarketplacecredential = async (
   return result;
 };
 
+const deleteAllMarketplacecredentials = async (): Promise<void> => {
+  await Marketplacecredential.deleteMany({});
+};
+
 export const MarketplacecredentialServices = {
   createMarketplacecredential,
   getSingleMarketplacecredential,
@@ -134,4 +138,5 @@ export const MarketplacecredentialServices = {
   updateMarketplacecredential,
   deleteMarketplacecredential,
   getLatestMarketplacecredentialsByName,
+  deleteAllMarketplacecredentials,
 };

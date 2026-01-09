@@ -106,6 +106,17 @@ const deleteMarketplacecredential = catchAsync(
   }
 );
 
+const deleteAllMarketplacecredentials = catchAsync(
+  async (req: Request, res: Response) => {
+    await MarketplacecredentialServices.deleteAllMarketplacecredentials();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'All Marketplacecredentials deleted successfully',
+    });
+  }
+);
+
 export const MarketplacecredentialController = {
   createMarketplacecredential,
   updateMarketplacecredential,
@@ -113,4 +124,5 @@ export const MarketplacecredentialController = {
   getSingleMarketplacecredential,
   deleteMarketplacecredential,
   getLatestMarketplacecredentialsByName,
+  deleteAllMarketplacecredentials,
 };
