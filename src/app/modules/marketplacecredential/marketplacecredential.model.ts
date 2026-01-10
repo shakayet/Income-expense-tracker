@@ -11,7 +11,7 @@ const marketplacecredentialSchema = new Schema<
   {
     marketplaceName: {
       type: String,
-      enum: ['amazon', 'ebay', 'alibaba', 'zalando', 'leroy_merlin'],
+      enum: ['amazon', 'ebay', 'alibaba', 'zalando', 'leroy_merlin', 'aliexpress'],
       required: true,
     },
     api_key: { type: String },
