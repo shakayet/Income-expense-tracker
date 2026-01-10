@@ -13,6 +13,12 @@ router.get(
   MarketplacecredentialController.getLatestMarketplacecredentialsByName
 );
 
+router.post(
+  '/delete-all',
+  // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+  MarketplacecredentialController.deleteAllMarketplacecredentials
+);
+
 router.get(
   '/:id',
   // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
@@ -30,12 +36,6 @@ router.post(
 
   validateRequest(MarketplacecredentialValidations.create),
   MarketplacecredentialController.createMarketplacecredential
-);
-
-router.post(
-  '/delete-all',
-  // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
-  MarketplacecredentialController.deleteAllMarketplacecredentials
 );
 
 router.patch(

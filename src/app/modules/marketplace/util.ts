@@ -249,8 +249,10 @@ async function loadEbayCredentialsFromDB(
 async function getAppAccessToken(country?: string): Promise<string> {
   const { clientId, clientSecret } = await loadEbayCredentialsFromDB(country);
 
-  // const clientId = 'CenterIn-yespend-PRD-ca317c62b-8eb20dcf',
-  //   clientSecret = 'PRD-a317c62b9e33-55a0-4d8a-a592-b6fd';
+  console.log({ clientId, clientSecret });
+
+  // const clientId = 'CenterIn-yespend2-PRD-9e03d7003-007140ef',
+  //   clientSecret = 'PRD-e03d7003df6c-e990-4d07-b71c-3e08';
   const cacheKey = clientId; // token cache per app
 
   const now = Date.now();
