@@ -79,6 +79,9 @@ const deleteMarketplacecredential = (id) => __awaiter(void 0, void 0, void 0, fu
     }
     return result;
 });
+const deleteAllMarketplacecredentials = () => __awaiter(void 0, void 0, void 0, function* () {
+    yield marketplacecredential_model_1.Marketplacecredential.deleteMany({});
+});
 exports.MarketplacecredentialServices = {
     createMarketplacecredential,
     getSingleMarketplacecredential,
@@ -86,4 +89,5 @@ exports.MarketplacecredentialServices = {
     updateMarketplacecredential,
     deleteMarketplacecredential,
     getLatestMarketplacecredentialsByName,
+    deleteAllMarketplacecredentials,
 };

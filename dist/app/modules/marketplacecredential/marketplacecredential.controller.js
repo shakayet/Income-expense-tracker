@@ -77,6 +77,14 @@ const deleteMarketplacecredential = (0, catchAsync_1.default)((req, res) => __aw
         data: result,
     });
 }));
+const deleteAllMarketplacecredentials = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield marketplacecredential_service_1.MarketplacecredentialServices.deleteAllMarketplacecredentials();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_codes_1.StatusCodes.OK,
+        success: true,
+        message: 'All Marketplacecredentials deleted successfully',
+    });
+}));
 exports.MarketplacecredentialController = {
     createMarketplacecredential,
     updateMarketplacecredential,
@@ -84,4 +92,5 @@ exports.MarketplacecredentialController = {
     getSingleMarketplacecredential,
     deleteMarketplacecredential,
     getLatestMarketplacecredentialsByName,
+    deleteAllMarketplacecredentials,
 };

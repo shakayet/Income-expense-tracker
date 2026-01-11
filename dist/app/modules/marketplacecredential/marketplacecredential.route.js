@@ -14,6 +14,9 @@ const router = express_1.default.Router();
 router.get('/latest', 
 // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 marketplacecredential_controller_1.MarketplacecredentialController.getLatestMarketplacecredentialsByName);
+router.post('/delete-all', 
+// auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
+marketplacecredential_controller_1.MarketplacecredentialController.deleteAllMarketplacecredentials);
 router.get('/:id', 
 // auth(USER_ROLES.SUPER_ADMIN, USER_ROLES.ADMIN),
 marketplacecredential_controller_1.MarketplacecredentialController.getSingleMarketplacecredential);

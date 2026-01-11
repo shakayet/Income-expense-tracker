@@ -216,6 +216,9 @@ function getAppAccessToken(country) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c, _d;
         const { clientId, clientSecret } = yield loadEbayCredentialsFromDB(country);
+        console.log({ clientId, clientSecret });
+        // const clientId = 'CenterIn-yespend2-PRD-9e03d7003-007140ef',
+        //   clientSecret = 'PRD-e03d7003df6c-e990-4d07-b71c-3e08';
         const cacheKey = clientId; // token cache per app
         const now = Date.now();
         const existing = tokenCache[cacheKey];
@@ -223,6 +226,7 @@ function getAppAccessToken(country) {
             return existing.token;
         }
         const creds = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+        console.log({ creds });
         const body = 'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope';
         const headers = {
             'Content-Type': 'application/x-www-form-urlencoded',

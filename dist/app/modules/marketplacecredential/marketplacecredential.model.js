@@ -5,7 +5,7 @@ const mongoose_1 = require("mongoose");
 const marketplacecredentialSchema = new mongoose_1.Schema({
     marketplaceName: {
         type: String,
-        enum: ['amazon', 'ebay', 'alibaba', 'zalando', 'leroy_merlin'],
+        enum: ['amazon', 'ebay', 'alibaba', 'zalando', 'leroy_merlin', 'aliexpress'],
         required: true,
     },
     api_key: { type: String },
