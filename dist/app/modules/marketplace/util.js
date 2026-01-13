@@ -17,12 +17,14 @@ exports.formatPrice = formatPrice;
 exports.getTopCheapestProductsFromEbay = getTopCheapestProductsFromEbay;
 exports.getSingleProductFromEbay = getSingleProductFromEbay;
 exports.comparePricesAcrossCountries = comparePricesAcrossCountries;
+exports.getTopCheapestProductsFromAliExpress = getTopCheapestProductsFromAliExpress;
 /* eslint-disable no-unused-vars */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const axios_1 = __importDefault(require("axios"));
+const crypto_1 = __importDefault(require("crypto"));
 const config_1 = __importDefault(require("../../../config"));
 const marketplacecredential_model_1 = require("../marketplacecredential/marketplacecredential.model");
 // const API_KEY = 'aad814019bmshd45653f0c24a087p11edf7jsn76826ab14238';
@@ -44,6 +46,7 @@ const countryToLocale = {
     IN: 'en-IN',
     IT: 'it-IT',
     AU: 'en-AU',
+    ES: 'es-ES',
 };
 function formatPrice(value, currency, country) {
     const locale = country
@@ -67,6 +70,7 @@ const countryToCurrency = {
     IT: 'EUR',
     IN: 'INR',
     AU: 'AUD',
+    ES: 'EUR',
 };
 const countryToEbayMarketplace = {
     // Use underscore variant which the Buy API expects in many cases
@@ -184,13 +188,17 @@ function loadEbayCredentialsFromDB(country_1) {
         if (country)
             query.country = country;
         // try with country first
-        let doc = yield marketplacecredential_model_1.Marketplacecredential.findOne(query).lean();
+        let doc = yield marketplacecredential_model_1.Marketplacecredential.findOne(query)
+            .sort({ _id: -1 })
+            .lean();
         // fallback: if country-specific not found, try without country
         if (!doc && country) {
             doc = yield marketplacecredential_model_1.Marketplacecredential.findOne({
                 marketplaceName: 'ebay',
                 environment,
-            }).lean();
+            })
+                .sort({ _id: -1 })
+                .lean();
         }
         // fallback to config values if DB not populated
         const cfgClientId = ((_a = config_1.default === null || config_1.default === void 0 ? void 0 : config_1.default.ebay) === null || _a === void 0 ? void 0 : _a.client_id) || ((_b = config_1.default === null || config_1.default === void 0 ? void 0 : config_1.default.ebay) === null || _b === void 0 ? void 0 : _b.clientId);
@@ -413,5 +421,87 @@ function comparePricesAcrossCountries(query_1, countries_1) {
             map[r.country] = r.products || [];
         });
         return map;
+    });
+}
+// ==============================
+// AliExpress Integration
+// ==============================
+function loadAliExpressCredentialsFromDB() {
+    return __awaiter(this, arguments, void 0, function* (environment = 'production') {
+        const query = { marketplaceName: 'aliexpress', environment };
+        const doc = yield marketplacecredential_model_1.Marketplacecredential.findOne(query)
+            .sort({ _id: -1 })
+            .lean();
+        console.log({ doc });
+        if (!doc || !doc.clientId || !doc.clientSecret) {
+            throw new Error('AliExpress credentials not found in DB');
+        }
+        return {
+            clientId: doc.clientId,
+            clientSecret: doc.clientSecret,
+        };
+    });
+}
+function generateAliExpressSignature(params, secret) {
+    const sortedKeys = Object.keys(params).sort();
+    let basestring = secret;
+    for (const key of sortedKeys) {
+        basestring += key + params[key];
+    }
+    basestring += secret;
+    return crypto_1.default
+        .createHash('md5')
+        .update(basestring, 'utf8')
+        .digest('hex')
+        .toUpperCase();
+}
+function getTopCheapestProductsFromAliExpress(query_1) {
+    return __awaiter(this, arguments, void 0, function* (query, top = 5, country = 'US') {
+        var _a, _b, _c, _d, _e, _f;
+        try {
+            const { clientId, clientSecret } = yield loadAliExpressCredentialsFromDB();
+            console.log({ clientId, clientSecret });
+            const params = {
+                app_key: clientId,
+                format: 'json',
+                method: 'aliexpress.affiliate.product.query',
+                sign_method: 'md5',
+                timestamp: new Date()
+                    .toISOString()
+                    .replace(/T/, ' ')
+                    .replace(/\..+/, ''),
+                v: '2.0',
+                keywords: query,
+                page_size: top.toString(),
+                sort: 'priceAsc',
+                target_currency: countryToCurrency[country === null || country === void 0 ? void 0 : country.toUpperCase()] || 'USD',
+                target_language: (countryToLocale[country === null || country === void 0 ? void 0 : country.toUpperCase()] || 'en-US').split('-')[0],
+            };
+            const sign = generateAliExpressSignature(params, clientSecret);
+            const url = 'https://api-sg.aliexpress.com/sync';
+            const res = yield axios_1.default.get(url, {
+                params: Object.assign(Object.assign({}, params), { sign }),
+            });
+            console.log({ res: res.data });
+            const products = ((_e = (_d = (_c = (_b = (_a = res.data) === null || _a === void 0 ? void 0 : _a.aliexpress_affiliate_product_query_response) === null || _b === void 0 ? void 0 : _b.resp_result) === null || _c === void 0 ? void 0 : _c.result) === null || _d === void 0 ? void 0 : _d.products) === null || _e === void 0 ? void 0 : _e.product) || [];
+            return products.map((p) => {
+                const price = parseFloat(p.target_sale_price || p.sale_price || '0');
+                const currency = p.target_sale_price_currency || p.sale_price_currency || 'USD';
+                return {
+                    itemId: p.product_id,
+                    title: p.product_title,
+                    price,
+                    currency,
+                    formattedPrice: formatPrice(price, currency, country),
+                    image: p.product_main_image_url,
+                    rating: parseFloat(p.evaluate_rate) || 0,
+                    url: p.promotion_link || p.product_detail_url,
+                };
+            });
+        }
+        catch (err) {
+            console.error('Error fetching AliExpress products:', ((_f = err.response) === null || _f === void 0 ? void 0 : _f.data) || err.message);
+            return [];
+        }
     });
 }

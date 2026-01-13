@@ -30,6 +30,7 @@ const countryToLocale: Record<string, string> = {
   IN: 'en-IN',
   IT: 'it-IT',
   AU: 'en-AU',
+  ES: 'es-ES',
 };
 
 export function formatPrice(value: number, currency: string, country?: string) {
@@ -54,6 +55,7 @@ const countryToCurrency: Record<string, string> = {
   IT: 'EUR',
   IN: 'INR',
   AU: 'AUD',
+  ES: 'EUR',
 };
 
 const countryToEbayMarketplace: Record<string, string> = {
@@ -582,6 +584,8 @@ export async function getTopCheapestProductsFromAliExpress(
       keywords: query,
       page_size: top.toString(),
       sort: 'priceAsc',
+      target_currency: countryToCurrency[country?.toUpperCase()] || 'USD',
+      target_language: (countryToLocale[country?.toUpperCase()] || 'en-US').split('-')[0],
     };
 
     const sign = generateAliExpressSignature(params, clientSecret);
