@@ -4,6 +4,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import crypto from 'crypto';
 import config from '../../../config';
 import { Marketplacecredential } from '../marketplacecredential/marketplacecredential.model';
 
@@ -212,14 +213,18 @@ async function loadEbayCredentialsFromDB(
   if (country) query.country = country;
 
   // try with country first
-  let doc: any = await Marketplacecredential.findOne(query).lean();
+  let doc: any = await Marketplacecredential.findOne(query)
+    .sort({ _id: -1 })
+    .lean();
 
   // fallback: if country-specific not found, try without country
   if (!doc && country) {
     doc = await Marketplacecredential.findOne({
       marketplaceName: 'ebay',
       environment,
-    }).lean();
+    })
+      .sort({ _id: -1 })
+      .lean();
   }
 
   // fallback to config values if DB not populated
@@ -510,4 +515,108 @@ export async function comparePricesAcrossCountries(
     map[r.country] = r.products || [];
   });
   return map;
+}
+
+// ==============================
+// AliExpress Integration
+// ==============================
+
+async function loadAliExpressCredentialsFromDB(
+  environment = 'production'
+): Promise<Creds> {
+  const query: any = { marketplaceName: 'aliexpress', environment };
+  const doc: any = await Marketplacecredential.findOne(query)
+    .sort({ _id: -1 })
+    .lean();
+
+  console.log({ doc });
+
+  if (!doc || !doc.clientId || !doc.clientSecret) {
+    throw new Error('AliExpress credentials not found in DB');
+  }
+
+  return {
+    clientId: doc.clientId,
+    clientSecret: doc.clientSecret,
+  };
+}
+
+function generateAliExpressSignature(
+  params: Record<string, string>,
+  secret: string
+): string {
+  const sortedKeys = Object.keys(params).sort();
+  let basestring = secret;
+  for (const key of sortedKeys) {
+    basestring += key + params[key];
+  }
+  basestring += secret;
+
+  return crypto
+    .createHash('md5')
+    .update(basestring, 'utf8')
+    .digest('hex')
+    .toUpperCase();
+}
+
+export async function getTopCheapestProductsFromAliExpress(
+  query: string,
+  top = 5,
+  country: string = 'US'
+) {
+  try {
+    const { clientId, clientSecret } = await loadAliExpressCredentialsFromDB();
+
+    console.log({ clientId, clientSecret });  
+
+    const params: Record<string, string> = {
+      app_key: clientId,
+      format: 'json',
+      method: 'aliexpress.affiliate.product.query',
+      sign_method: 'md5',
+      timestamp: new Date()
+        .toISOString()
+        .replace(/T/, ' ')
+        .replace(/\..+/, ''),
+      v: '2.0',
+      keywords: query,
+      page_size: top.toString(),
+      sort: 'priceAsc',
+    };
+
+    const sign = generateAliExpressSignature(params, clientSecret);
+    const url = 'https://api-sg.aliexpress.com/sync';
+
+    const res = await axios.get(url, {
+      params: { ...params, sign },
+    });
+
+    console.log({ res: res.data });
+
+    const products =
+      res.data?.aliexpress_affiliate_product_query_response?.resp_result?.result
+        ?.products?.product || [];
+
+    return products.map((p: any) => {
+      const price = parseFloat(p.target_sale_price || p.sale_price || '0');
+      const currency = p.target_sale_price_currency || p.sale_price_currency || 'USD';
+      
+      return {
+        itemId: p.product_id,
+        title: p.product_title,
+        price,
+        currency,
+        formattedPrice: formatPrice(price, currency, country),
+        image: p.product_main_image_url,
+        rating: parseFloat(p.evaluate_rate) || 0,
+        url: p.promotion_link || p.product_detail_url,
+      };
+    });
+  } catch (err: any) {
+    console.error(
+      'Error fetching AliExpress products:',
+      err.response?.data || err.message
+    );
+    return [];
+  }
 }

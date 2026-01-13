@@ -11,6 +11,7 @@ import {
   getSingleAmazonProduct,
   getSingleProductFromEbay,
   getTopCheapestProductsFromEbay,
+  getTopCheapestProductsFromAliExpress,
 } from './util';
 import { SearchTypeModel } from './marketplace.model';
 import { genericSearch } from '../scraping/affiliate.service';
@@ -63,11 +64,12 @@ export async function searchProduct(req: Request, res: Response) {
 
       // single-country (or default) search
       const ct = country || 'US';
-      const [ebay] = await Promise.all([
+      const [ebay, aliexpress] = await Promise.all([
         // getCheapestAmazonProducts(query, 5, ct),
         getTopCheapestProductsFromEbay(query, 5, ct),
+        getTopCheapestProductsFromAliExpress(query, 5, ct),
       ]);
-      result = { ebay };
+      result = { ebay, aliexpress };
     }
     // amazon + ebay combined search (multi-country) - DISABLED FOR NOW
     //   const [amazon, ebay] = await Promise.all([
