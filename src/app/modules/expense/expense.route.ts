@@ -14,7 +14,7 @@ import {
 
 const router = express.Router();
 
-router.use(auth(USER_ROLES.USER));
+router.use(auth(USER_ROLES.USER, USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN));
 
 router
   .route('/')
