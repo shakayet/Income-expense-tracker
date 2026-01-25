@@ -1,8 +1,8 @@
 node_modules
-.env
 
 /winston
 /uploads
 # Firebase / GCP credentials
 src/config/serviceAccountKey.json
 config/.serviceAccountKey.temp.json
+config.bat

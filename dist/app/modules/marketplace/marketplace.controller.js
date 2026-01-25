@@ -59,11 +59,12 @@ function searchProduct(req, res) {
                 console.log('🔍 Performing API-based search...');
                 // single-country (or default) search
                 const ct = country || 'US';
-                const [ebay] = yield Promise.all([
+                const [ebay, aliexpress] = yield Promise.all([
                     // getCheapestAmazonProducts(query, 5, ct),
                     (0, util_1.getTopCheapestProductsFromEbay)(query, 5, ct),
+                    (0, util_1.getTopCheapestProductsFromAliExpress)(query, 5, ct),
                 ]);
-                result = { ebay };
+                result = { ebay, aliexpress };
             }
             // amazon + ebay combined search (multi-country) - DISABLED FOR NOW
             //   const [amazon, ebay] = await Promise.all([
